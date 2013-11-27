@@ -60,7 +60,7 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
             var container = self.get("container");
             var el = self.get("el");
             // hack render Tmpl Engine
-            var html = tmpler.node.html();
+            var html = tmpler.tpl;
             var node;
 
             if (!el || el.length == 0) {
