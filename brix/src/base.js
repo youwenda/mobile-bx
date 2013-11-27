@@ -1,8 +1,40 @@
-define("brix/base", ["magix/magix", "magix/event"], function (require) {
+define("brix/base", ["brix/event"], function (require) {
 	// body...
-	var Magix = require("magix/magix");
-	var Event = require("magix/event");
-	var Mix = Magix.mix;
+	var $ = Zepto;
+    var EMPTY = "";
+    var guid = 0;
+    var Event = require("brix/event");
+    /**
+     * 混合对象的属性
+     * @param  {Object} aim    要mix的目标对象
+     * @param  {Object} src    mix的来源对象
+     * @param  {Object} ignore 在复制时，忽略的值
+     * @return {Object}
+     */
+    var Mix = function(aim, src, ignore) {
+        for (var p in src) {
+            if (!ignore || !Has(ignore, p)) {
+                aim[p] = src[p];
+            }
+        }
+        return aim;
+    };
+
+    var Extend = function(ctor, base, props, statics) {
+        ctor.superclass = base.prototype;
+        base.prototype.constructor = base;
+        var T = function() {};
+        T.prototype = base.prototype;
+        ctor.prototype = new T();
+        Mix(ctor.prototype, props);
+        Mix(ctor, statics);
+        ctor.prototype.constructor = ctor;
+        return ctor;
+    };
+
+    var Guid = function (pre) {
+        return (pre || EMPTY) + guid++;
+    };
 
 	function Base(config) {
         var self = this,
@@ -112,15 +144,22 @@ define("brix/base", ["magix/magix", "magix/event"], function (require) {
 
     // kissy 1.4的写法，要支持么
 
-    Base.extend = function (px, sx) {
+    // Base.extend = function (px, sx) {
 
-        var F = function() {
-            F.superclass.constructor.apply(this, arguments);
-        };
+    //     var F = function() {
+    //         F.superclass.constructor.apply(this, arguments);
+    //     };
 
-        return Magix.extend(F, Base, px, sx);
+    //     return extend(F, Base, px, sx);
 
-    };
+    // };
+    
+    // 还是要支持简单实用的extend主义
+    Mix(Base, {
+        mix: Mix,
+        extend: Extend,
+        guid: Guid
+    });
 
     Mix(Mix(Base.prototype, Event), {
         /**
@@ -157,7 +196,7 @@ define("brix/base", ["magix/magix", "magix/event"], function (require) {
          */
         set: function(name, value) {
         	var self = this;
-        	if (Magix.isObject(name)) {
+        	if ($.isPlainObject(name)) {
                 var k;
                 for (k in name) {
                     setInternal.call(self, k, name[k]);

@@ -35,6 +35,7 @@ define("brix/event", function (argument) {
 	            var end = list.length,
 	                len = end - 1,
 	                idx, f;
+
 	            while (end--) {
 	                idx = lastToFirst ? end : len - end;
 	                f = list[idx];
@@ -43,6 +44,7 @@ define("brix/event", function (argument) {
 	                	f.call(me, data);
 	                }
 	            }
+
 	        }
 	        if (remove) {
 	            delete me[key];
@@ -64,7 +66,7 @@ define("brix/event", function (argument) {
 	        });
 	        T.on('done',function(e){
 	            alert(3);
-	        },0);//监听插入到开始位置
+	        });//监听插入到开始位置
 
 	        T.once('done',function(e){
 	            alert('once');

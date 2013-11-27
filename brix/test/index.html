@@ -98,8 +98,89 @@
 		   	//KISSY.use("base", function(S, Base) {
 
 			    // 继承 Base
-			    var Person = Base.extend({
-			        sayHi: function(name) {
+			    
+			    // var Person = function() {};
+
+			    // Person.prototype = {
+
+			    // };
+
+			    // KISSY 1.4定义的形式
+
+			    // var Person = Base.extend({
+			    //     sayHi: function(name) {
+			    //         alert("Hi, " + name + "! Nice to meet you!");
+			    //         //触发自定义事件
+			    //         console.info("fire的返回值？？？", this.fire('say'));
+			    //     },
+
+			    //     tellName: function() {
+			    //         alert("My name is " + this.get('name') + ".");
+			    //         this.fire('say');
+			    //     },
+
+			    //     tellAge: function() {
+			    //         alert("I'm " + this.get('age') + " years old.");
+			    //         this.fire('say');
+			    //     },
+
+			    //     introduce: function(extra) {
+			    //         alert("Hello everyone, my name is " + this.get('name') + ", and I'm " + this.get('age') + " years old." + extra);
+			    //         this.fire('say');
+			    //     }
+			    // },{
+			    //     ATTRS: {
+			    //         name: {
+			    //             //设置默认值
+			    //             value: "",
+			    //             valueFn: function() {
+			    //             	return {1:1}
+			    //             },
+			    //             setter: function(v) {
+			    //             	if (v == "jintai.yzq") {
+			    //             		return "you are right!"
+			    //             	}
+			    //             	return v;
+			    //             }
+			    //         },
+			    //         age: {
+			    //             value: 1,
+			    //             getter: function(v) {
+			    //             	return 26;
+			    //             }
+			    //         }
+			    //     }
+			    // });
+			    // 
+			    
+			    function Person() {
+			    	Person.superclass.constructor.apply(this);
+			    }
+			    
+			    Person.ATTRS = {
+		            name: {
+		                //设置默认值
+		                value: "",
+		                valueFn: function() {
+		                	return "default is youzhiqiang!"
+		                },
+		                setter: function(v) {
+		                	if (v == "jintai.yzq") {
+		                		return "you are right!"
+		                	}
+		                	return v;
+		                }
+		            },
+		            age: {
+		                value: 1,
+		                getter: function(v) {
+		                	return 26;
+		                }
+		            }
+		        };
+
+			    Base.extend(Person, Base, {
+					sayHi: function(name) {
 			            alert("Hi, " + name + "! Nice to meet you!");
 			            //触发自定义事件
 			            console.info("fire的返回值？？？", this.fire('say'));
@@ -118,28 +199,6 @@
 			        introduce: function(extra) {
 			            alert("Hello everyone, my name is " + this.get('name') + ", and I'm " + this.get('age') + " years old." + extra);
 			            this.fire('say');
-			        }
-			    },{
-			        ATTRS: {
-			            name: {
-			                //设置默认值
-			                value: "",
-			                valueFn: function() {
-			                	return {1:1}
-			                },
-			                setter: function(v) {
-			                	if (v == "jintai.yzq") {
-			                		return "you are right!"
-			                	}
-			                	return v;
-			                }
-			            },
-			            age: {
-			                value: 1,
-			                getter: function(v) {
-			                	return 26;
-			                }
-			            }
 			        }
 			    });
 
