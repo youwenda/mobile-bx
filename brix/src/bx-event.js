@@ -1,100 +1,111 @@
-define("brix/bx-event", ["magix/view", "magix/body"], function  (require, exports, module) {
+define("brix/bx-event", function  (require, exports, module) {
 	// body...
 	var $ = Zepto;
-	var EMPTY = "";
-	var View = require("magix/view");
-	var Body = require("magix/body");
-
-
-
 	var unSupportBubbleEvents = ['change', 'valuechange']
-    
-    module.exports = {
+	
+    var BxEvent = (function() {
 
-        bxDelegate: function() {
+        var METHODS = {
+            bxDelegate: function(host) {
 
-            var c = this.constructor
-            while (c) {
-                this.bxDelegateMap(c.EVENTS)
-                c = c.superclass ? c.superclass.constructor : null
-            }
+                var c = host.constructor
+                while (c) {
+                    this.bxDelegateMap(host, c.EVENTS)
+                    c = c.superclass ? c.superclass.constructor : null
+                }
 
-            //外部动态传入的事件代理
-            var events = this.get('events')
-            if (events) {
-                this.bxDelegateMap(events)
-            }
-        },
+                //外部动态传入的事件代理
+                var events = host.get('events')
+                if (events) {
+                    this.bxDelegateMap(host, events)
+                }
+            },
 
-        bxDelegateMap: function(eventsMap) {
-        	var self = this;
-        	var el = this.get('el');
+            bxDelegateMap: function(host, eventsMap) {
 
-        	var elID = el.attr('id');
+                var self = this
+                var el = host.get('el')
+                var fn
+                self.bxUnBubbleEvents = {}
 
-        	var fn, fnName, fnText;
+                for (var sel in eventsMap) {
+                    var events = eventsMap[sel]
+                    for (var type in events) {
+                        fn = events[type]
 
-        	// sel选择器类型 events 相应选择器下的事件
-        	for (var sel in eventsMap) {
-        		var events = eventsMap[sel];
-        		for (var type in events) {
-        			// 
-        			fn = events[type];
-    			    fnName = 'mx-' + type;
-    				fnText = elID + '_' + type + '{bxId:' + elID + '}';
-
-        			if (sel == 'self') {
-        				el.attr(fnName, fnText);
-                        View.mixin({
-                            'xxx':function(e){
-                                me.xx();
+                        if (sel === 'self') {
+                            el.on(type, fn);
+                        } else if (sel === 'window') {
+                            $(window).on(type, fn)
+                        } else if (sel === 'body') {
+                            $(document.body).on(type, fn)
+                        } else if (sel === 'document') {
+                            $(document).on(type, fn);
+                        } else {
+                            if ($.inArray(type, unSupportBubbleEvents)) {
+                                //将不冒泡事件做记录
+                                self.bxUnBubbleEvents[sel] = self.bxUnBubbleEvents[sel] || []
+                                self.bxUnBubbleEvents[sel].push({
+                                    type: type,
+                                    fn: fn
+                                })
+                                $(sel, el).on(type, fn)
+                            } else {
+                                el.on(type, sel, fn)
                             }
-                        })
-                        
-        			} else if (sel == 'body' || sel == 'document') {
-        				$(document.body).attr(fnName, fnText);
-        			} else if (sel == 'window') {
-        				$(window).on(type, fn);
-        			} else {
-        				// 非冒泡事件也不处理了
-        				$(sel, el).attr(fnName, fnText);
-        			}
 
-        		}
-        	}
+                        }
+                    }
 
-        },
+                }
+            },
 
-        bxUndelegate: function() {
-            var c = this.constructor
+            bxUndelegate: function(host) {
+                var c = host.constructor
 
-            while (c) {
-                this.bxUndelegateMap(c.EVENTS)
-                c = c.superclass ? c.superclass.constructor : null
-            }
-            //外部动态传入的事件代理
-            var events = this.get('events')
-            if (events) {
-                this.bxUndelegateMap(events)
-            }
-        },
+                while (c) {
+                    this.bxUndelegateMap(host, c.EVENTS)
+                    c = c.superclass ? c.superclass.constructor : null
+                }
+                //外部动态传入的事件代理
+                var events = host.get('events')
+                if (events) {
+                    this.bxUndelegateMap(events)
+                }
+            },
 
-        // 仅仅detach window methods
-        bxUndelegateMap: function(eventsMap) {
-            var el = this.get('el')
-            var fn
+            bxUndelegateMap: function(host, eventsMap) {
+                var el = host.get('el')
+                var fn
 
-            for (var sel in eventsMap) {
-                var events = eventsMap[sel]
-                for (var type in events) {
-                    fn = events[type]
+                for (var sel in eventsMap) {
+                    var events = eventsMap[sel]
+                    for (var type in events) {
+                        fn = events[type]
 
-                    if (sel == 'window') {
-                    	$(window).off(type, fn);
+                        if (sel === 'self') {
+                            el.off(type, fn)
+                        } else if (sel === 'window') {
+                            $(window).off(type, fn)
+                        } else if (sel === 'body') {
+                            $(document.body).off(type, fn)
+                        } else if (sel === 'document') {
+                            $(document).off(type, fn)
+                        } else {
+                            if ($.inArray(type, unSupportBubbleEvents)) {
+                                $(sel, el).off(type, fn)
+                            } else {
+                                el.off(type, sel, fn)
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
+        };
 
+        return METHODS;
+
+    })();
+
+    return BxEvent;
 })

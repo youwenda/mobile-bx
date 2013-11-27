@@ -1,10 +1,9 @@
-define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], function (require) {
+define("brix/brick", ["brix/base", "brix/tmpler", "brix/bx-event"], function (require) {
 	// body...
     var $ = Zepto;
 	var EMPTY = "";
 	var Base = require("brix/base");
-	var Tmpl = require("brix/tmpl");
-    var Cache = require("brix/cache");
+	var Tmpler = require("brix/tmpler");
     var BxEvent = require("brix/bx-event");
 	var Mix = Base.mix;
     var Noop = function() {}
@@ -20,7 +19,7 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
         var data = self.get("data");
 
         if (!self.__tmpler) {
-            var tmpler = new Tmpl(tpl, data);
+            var tmpler = new Tmpler(tpl, data);
             self.__tmpler = tmpler;
             if (tmpler.inDom) {
                 self.set("el", tmpler.tpl);
@@ -33,7 +32,7 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
         //     cache.add(self);
         // }
 
-        if (self.get("autoRender") || self.__tmpler.inDom) {
+        if (self.get("autoRender") || tmpler.inDom) {
             render.call(self);
         }
     }
@@ -43,9 +42,8 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
         if (!self.__rendered) {
             doRender.call(this);
             self.__rendered = true;
-            
-            // 采用Magix的方式代理事件
-            self.bxDelegate();
+
+            BxEvent.bxDelegate(self);
 
             // 组件的初始化方法
             self.initialize();
@@ -55,7 +53,7 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
     function doRender() {
         var self = this;
         var tmpler = self.__tmpler;
-
+        debugger
         if (tmpler.tpl && !tmpler.inDom) {
             var container = self.get("container");
             var el = self.get("el");
@@ -64,17 +62,17 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
             var node;
 
             if (!el || el.length == 0) {
-                var elID = Base.guid('brix_'); //'brix_' + S.guid(); 
+                var elID = Base.guid("brix_"); //'brix_' + S.guid(); 
                 node = $(html);
 
                 if (node.length > 1) {
-                    node = $('<div id="' + elID + '"></div>').append(node);
+                    node = $("<div id='" + elID + "'></div>").append(node);
                 } else {
-                    elID = node.attr('id') || elID;
-                    node.attr('id', elID);
+                    elID = node.attr("id") || elID;
+                    node.attr("id", elID);
                 }
                 container.append(node);
-                self.set('el', '#' + elID);
+                self.set("el", "#" + elID);
             } else {
                 container.append(html);
             }
@@ -145,6 +143,20 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
         initialize: Noop,
         destructor: Noop,
 
+        setChunkData: function(data) {
+            var self = this;
+            var tmpler = self.__tmpler;
+            var k, bxData;
+            if (tmpler) {
+                bxData = tmpler.bxData;
+                for (k in data) {
+                    if (bxData.hasOwnProperty(k)) {
+                        bxData.key = data[k];
+                    }
+                }
+            }
+        },
+
         destroy: function() {
             var self = this;
             self.__tmpler = null;
@@ -153,9 +165,8 @@ define("brix/brick", ["brix/base", "brix/tmpl", "brix/cache", "brix/bx-event"], 
 
 	});
 
-    // 目前还是将Events挂在原型上吧，以后要尽量减少原型上的函数
-    
-    Mix(Brick.prototype, BxEvent);
+    // 要尽量减少原型上的函数
+    // Mix(Brick.prototype, BxEvent);
 	
 	return Brick;
 	

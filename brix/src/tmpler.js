@@ -1,4 +1,4 @@
-define("brix/tmpl", ["brix/base"], function (require) {
+define("brix/tmpler", ["brix/base"], function (require) {
 	// body...	
 	
 	var $ = Zepto;
@@ -31,10 +31,12 @@ define("brix/tmpl", ["brix/base"], function (require) {
 	function Tmpler(tpl, data) {
 		var self = this
 
+        data = data || {}
+
 		if (tpl) {
 
 			self.tpl = tpl
-			self.data = data || {};
+			self.data = data
 		    //延迟刷新存储的key
 	        self.bxRefreshKeys = []
 	        //子模板数组
@@ -72,12 +74,13 @@ define("brix/tmpl", ["brix/base"], function (require) {
 
 	            if (!inDom) {
 	            	// brix3 方式编译模版
-	            	self.bxIBuildTpl(tpl);
+	            	self.tpl = self.bxIBuildTpl(tpl);
+                    node = $(self.tpl);
 	            }
 	            self.inDom = inDom;
 	            self.node = node;
 	            //build data
-	            //self.bxIBuildData(data);
+	            self.bxData = self.bxIBuildData(data);
             }
 
         },
@@ -93,21 +96,22 @@ define("brix/tmpl", ["brix/base"], function (require) {
                 tpl = self.bxIBuildStoreTpls(tpl)
                 tpl = self.bxITag(tpl)
                 tpl = self.bxISubTpl(tpl)
-                //存储模板
-                self.tpl = tpl;
                 tempTpl = self.bxIBuildBrickTpls(tpl)
             } 
 
             if (tempTpl) {
                 tempTpl = self.bxISelfCloseTag(tempTpl)
-                self.bxIBuildSubTpls(tempTpl, self.bxSubTpls)
 
                 // fix 原来的方式对于@brix_brix_tag_\d+@brix里面含有bx-datakey的未进行处理
 
                 $.each(self.bxBrickTpls, function(k, v) {
-                	self.bxIBuildSubTpls((v.start + v.middle + v.end), self.bxSubTpls);
+                    self.bxIBuildSubTpls((v.start + v.middle + v.end), self.bxSubTpls);
                 })
+
+                self.bxIBuildSubTpls(tempTpl, self.bxSubTpls)
             }
+
+            return tpl
 
         },
 
@@ -292,22 +296,20 @@ define("brix/tmpl", ["brix/base"], function (require) {
          * 编译数据，设置bxData对象
          * @private
          */
-        bxIBuildData:function(){
+        bxIBuildData: function(data) {
             var self = this
-            //var data = self.get('data')
-            var data = self.data;
             var props = {}
-            var fn = function(k){
+            var fn = function(k) {
                 props[k] = {
-                    get:function(){
+                    get: function() {
                         return data[k]
                     },
-                    set:function(v){
+                    set: function(v) {
                         data[k] = v
                         if (!$.inArray(k, self.bxRefreshKeys)) {
                             self.bxRefreshKeys.push(k)
                         }
-                        if(self.bxRefresh){
+                        if (self.bxRefresh) {
                             self.bxIRefreshTpl(self.bxSubTpls, self.bxRefreshKeys, data)
                             self.bxRefreshKeys = []
                         }
@@ -315,13 +317,13 @@ define("brix/tmpl", ["brix/base"], function (require) {
                     }
                 }
             }
-            if(data){
+            if (data) {
                 self.bxRefresh = true //数否刷新
-                for(var prop in data){
+                for (var prop in data) {
                     fn(prop)
                 }
-                //全新的数据对象，对齐操作，会
-                self.bxData = defineProperties({},props)
+
+                return defineProperties({}, props)
             }
         },
 
@@ -338,9 +340,35 @@ define("brix/tmpl", ["brix/base"], function (require) {
             var el = self.node
 
             $.each(subTpls, function(i, v) {
+
+                // 先从缓存进行处理
                 var datakeys = $.map(v.datakey.split(','), function(str) {
-                    return $.trim(str)
-                })
+                    return $.trim(str);
+                });
+
+                //是否包含的表示符
+                for (var i = 0; i < datakeys.length; i++) {
+                    for (var j = 0; j < keys.length; j++) {
+                        if (datakeys[i] == keys[j]) {
+                            flg = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (flg) {
+                    var nodes = $('[bx-subtpl=' + o.name + ']');
+
+                    //如果el本身也是tpl，则加上自己
+                    if (el.attr('bx-subtpl') == o.name) {
+                        $.add(el, nodes);
+                    }
+
+                    // fire events
+                    
+
+                }
+
             });
 
 

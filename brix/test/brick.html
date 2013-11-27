@@ -90,7 +90,14 @@
 					}
 				});
 
+				setTimeout(function() {
+					alert('timeout')
+					console.info(bx.__tmpler.bxData.key1, bx.__tmpler.bxData.key2);
+					//bx.bxData.key1 = "xxxx";
+					bx.__tmpler.bxData.key1 = "xxx";
+				}, 3000);
 
+				console.info(bx);
 
 			})
 
