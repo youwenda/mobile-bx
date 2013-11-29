@@ -36,6 +36,7 @@
 				<p>
 					&copy; Copyright  by jintai.yzq
 				</p>
+				<input type="button" value="设置局部渲染" />
 			</footer>
 		</div>
 
@@ -90,12 +91,13 @@
 					}
 				});
 
-				setTimeout(function() {
-					alert('timeout')
-					console.info(bx.__tmpler.bxData.key1, bx.__tmpler.bxData.key2);
-					//bx.bxData.key1 = "xxxx";
-					bx.__tmpler.bxData.key1 = "xxx";
-				}, 3000);
+				$("input[type='button']").on("click", function(e) {
+					//bx.__tmpler.bxData = {key1: "xxxx"} //is wrong
+					//bx.__tmpler.bxData.key1 = "xxx" //is ok
+					bx.setChunkData({
+						key1: (+new Date())
+					});
+				})
 
 				console.info(bx);
 

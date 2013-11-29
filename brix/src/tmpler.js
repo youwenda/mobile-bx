@@ -1,8 +1,10 @@
-define("brix/tmpler", ["brix/base"], function (require) {
+define("brix/tmpler", ["brix/base", "brix/event"], function (require) {
 	// body...	
 	
 	var $ = Zepto;
 	var Base = require("brix/base");
+    var Event = require("brix/event");
+    var Mix = Base.mix;
 
 	var defineProperty = Object.defineProperty
     var defineProperties = Object.defineProperties
@@ -37,6 +39,7 @@ define("brix/tmpler", ["brix/base"], function (require) {
 
 			self.tpl = tpl
 			self.data = data
+            self.cache = {}
 		    //延迟刷新存储的key
 	        self.bxRefreshKeys = []
 	        //子模板数组
@@ -49,6 +52,7 @@ define("brix/tmpler", ["brix/base"], function (require) {
 
 		}
 	}
+
 
     Tmpler.prototype = {
         bxIParse: function() {
@@ -306,14 +310,24 @@ define("brix/tmpler", ["brix/base"], function (require) {
                     },
                     set: function(v) {
                         data[k] = v
-                        if (!$.inArray(k, self.bxRefreshKeys)) {
+                        if (!~$.inArray(k, self.bxRefreshKeys)) {
                             self.bxRefreshKeys.push(k)
                         }
-                        if (self.bxRefresh) {
-                            self.bxIRefreshTpl(self.bxSubTpls, self.bxRefreshKeys, data)
-                            self.bxRefreshKeys = []
+
+                        // 每次改变属性，都会进行更新操作，那么当属性很多时，会不会影响性能，两种方法
+                        // 1. 设置timer
+                        // 2. 控制权移出，即将重新渲染方法交给setChunkData方法
+                        
+                        if (self.timer) {
+                            clearTimeout(self.timer)
                         }
-                        self.bxRefresh = true
+                        self.timer = setTimeout(function() {
+                            if (self.bxRefresh) {
+                                self.bxIRefreshTpl(self.bxSubTpls, self.bxRefreshKeys, data)
+                                self.bxRefreshKeys = []
+                            }
+                            self.bxRefresh = true
+                        }, 100)
                     }
                 }
             }
@@ -338,15 +352,84 @@ define("brix/tmpler", ["brix/base"], function (require) {
         bxIRefreshTpl: function(subTpls, keys, data) {
             var self = this
             var el = self.node
+            
+            var bxRefreshTpl = function(name) {
+
+                var cache = self.cache[name]
+                
+                if (!cache || !cache.bxRefresh) {
+                    return
+                }
+
+                var nodes = cache.bxRefreshNodes
+
+                if (nodes) {
+                    // fire events
+                    nodes.forEach(function(node) {
+                        node = $(node)
+                        if (cache.subTpl.tpl) {
+                            //渲染方式，目前支持html，append，prepend
+                            var renderType = node.attr('bx-rendertype') || 'html'
+                            self.fire('beforeRefreshTpl', {
+                                node: node,
+                                renderType: renderType
+                            })
+
+                            //重新设置局部内容
+
+                            if (renderType == 'html') {
+                                node.empty();
+                            }
+                            //TODO  这里遇到自定义标签貌似会有问题。等以后再说吧
+                            node[renderType]($.trim(self.bxRenderTpl(cache.subTpl.tpl, data)))
+
+                            /**
+                             * @event afterRefreshTpl
+                             * 局部刷新后触发
+                             * @param {KISSY.Event.CustomEventObject} e
+                             */
+                            self.fire('afterRefreshTpl', {
+                                node: node,
+                                renderType: renderType
+                            })
+                        }
+
+                        $.each(cache.subTpl.attrs, function(k, v) {
+                            var val = $.trim(self.bxRenderTpl(v, data))
+                            if (node[0].nodeName == 'INPUT' && k == 'value') {
+                                node.val(val)
+                            } else if(k == 'class'){
+                                node[0].className = val
+                            } 
+                            else {
+                                node.attr(k, val)
+                            }
+                        })
+
+                    });
+                }
+            }
+
 
             $.each(subTpls, function(i, v) {
-
+                var cache
                 // 先从缓存进行处理
+                if (cache = self.cache[v.name]) {
+                    if (cache.bxRefresh) {
+                        bxRefreshTpl(v.name)
+                    }
+                    return
+                }
+
+                cache = self.cache[v.name] = {}
+
                 var datakeys = $.map(v.datakey.split(','), function(str) {
                     return $.trim(str);
                 });
 
                 //是否包含的表示符
+                var flg = false
+
                 for (var i = 0; i < datakeys.length; i++) {
                     for (var j = 0; j < keys.length; j++) {
                         if (datakeys[i] == keys[j]) {
@@ -357,99 +440,39 @@ define("brix/tmpler", ["brix/base"], function (require) {
                 }
 
                 if (flg) {
-                    var nodes = $('[bx-subtpl=' + o.name + ']');
+                    var nodes = $('[bx-subtpl=' + v.name + ']');
 
                     //如果el本身也是tpl，则加上自己
-                    if (el.attr('bx-subtpl') == o.name) {
+                    if (el.attr('bx-subtpl') == v.name) {
                         $.add(el, nodes);
                     }
 
-                    // fire events
-                    
+                    cache.bxRefreshNodes = nodes
+                    cache.bxRefresh = true
+                    cache.subTpl = v
+                    bxRefreshTpl(v.name)
 
+                } else if (v.subTpls && v.subTpls.length) {
+                    cache.bxRefresh = true
+                    self.bxIRefreshTpl(v.subTpls, keys, data)
                 }
 
             });
+        },
 
-
-            // if (!self.bxRendered) {
-            //     return
-            // }
-            // 
-            
-            // $.each(subTpls, function(i, v) {
-            // 	var datakeys = $.map(v.datakey.split(','), function(str)) {
-            // 		return $.trim(str) //修复编辑器格式化造成的问题
-            // 	}
-            // 	//是否包含的表示符
-            // 	var flg = false
-
-            // 	for (var i = 0; i < datakeys.length; i++) {
-            //         for (var j = 0; j < keys.length; j++) {
-            //             if (datakeys[i] == keys[j]) {
-            //                 flg = true
-            //                 break
-            //             }
-            //         }
-            //     }
-
-            //     if (flg) {
-            //         var nodes = el.all('[bx-subtpl=' + o.name + ']')
-
-            //         //如果el本身也是tpl，则加上自己
-            //         if (el.attr('bx-subtpl') == o.name) {
-            //             nodes = el.add(nodes)
-            //         }
-
-            //         nodes.each(function(node) {
-            //             if (o.tpl) {
-            //                 //渲染方式，目前支持html，append，prepend
-            //                 var renderType = node.attr('bx-rendertype') || 'html'
-            //                 self.fire('beforeRefreshTpl', {
-            //                     node: node,
-            //                     renderType: renderType
-            //                 })
-
-            //                 //重新设置局部内容
-
-            //                 if (renderType == 'html') {
-            //                     node.empty();
-            //                 }
-            //                 //TODO  这里遇到自定义标签貌似会有问题。等以后再说吧
-            //                 node[renderType](S.trim(self.bxRenderTpl(o.tpl, data)))
-
-            //                 /**
-            //                  * @event afterRefreshTpl
-            //                  * 局部刷新后触发
-            //                  * @param {KISSY.Event.CustomEventObject} e
-            //                  */
-            //                 self.fire('afterRefreshTpl', {
-            //                     node: node,
-            //                     renderType: renderType
-            //                 })
-            //             }
-
-            //             S.each(o.attrs, function(v, k) {
-            //                 var val = S.trim(self.bxRenderTpl(v, data))
-            //                 if (node[0].tagName.toUpperCase() == 'INPUT' && k == "value") {
-            //                     node.val(val)
-            //                 } else if(k == 'class'){
-            //                     node[0].className = val
-            //                 } 
-            //                 else {
-            //                     node.attr(k, val)
-            //                 }
-            //             })
-            //         })
-            //     } else if (o.subTpls && o.subTpls.length > 0) {
-            //         //刷新子模板的子模板
-            //         self.bxIRefreshTpl(el, o.subTpls, keys, data)
-            //     }
-
-            // })
-
+        /**
+         * 模板和数据渲染成字符串
+         * @param  {Object} data 数据
+         * @return {String} html片段
+         * @private
+         */
+        bxRenderTpl: function(tpl, data) {
+            var self = this
+            return tpl + ' for refreshRender Tpl' + Base.guid()
         }
     }
+
+    Mix(Tmpler.prototype, Event)
 
     return Tmpler;
 

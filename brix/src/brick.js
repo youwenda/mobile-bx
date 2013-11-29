@@ -7,10 +7,12 @@ define("brix/brick", ["brix/base", "brix/tmpler", "brix/bx-event"], function (re
     var BxEvent = require("brix/bx-event");
 	var Mix = Base.mix;
     var Noop = function() {}
-
+    var start;
 	function Brick() {
+        start = (+new Date());
 		Brick.superclass.constructor.apply(this, arguments);
-		initializer.call(this);
+        initializer.call(this);
+        console.info((+new Date) - start)
 	}
 
     function initializer() {
@@ -53,7 +55,6 @@ define("brix/brick", ["brix/base", "brix/tmpler", "brix/bx-event"], function (re
     function doRender() {
         var self = this;
         var tmpler = self.__tmpler;
-        debugger
         if (tmpler.tpl && !tmpler.inDom) {
             var container = self.get("container");
             var el = self.get("el");
@@ -150,9 +151,7 @@ define("brix/brick", ["brix/base", "brix/tmpler", "brix/bx-event"], function (re
             if (tmpler) {
                 bxData = tmpler.bxData;
                 for (k in data) {
-                    if (bxData.hasOwnProperty(k)) {
-                        bxData.key = data[k];
-                    }
+                    bxData[k] = data[k];
                 }
             }
         },
