@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+	    <meta name="apple-mobile-web-app-capable" content="yes" />
+	    <meta name="format-detection" content="telephone=no">
+	    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	    <meta name="HandheldFriendly" content="true" />
+	    <meta http-equiv="x-rim-auto-match" content="none" />
+	    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+	</head>
+
+	<body>
+		<div>
+			<header>
+				<h1>HTML5_TEMPLATE</h1>
+			</header>
+			<nav>
+				<p>
+					<a href="/">Home</a>
+				</p>
+				<p>
+					<a href="/contact">Contact</a>
+				</p>
+			</nav>
+
+			<div>
+
+			</div>
+
+			<footer>
+				<p>
+					&copy; Copyright  by jintai.yzq
+				</p>
+			</footer>
+		</div>
+
+		<script type="text/javascript" src="http://g.tbcdn.cn/kissy/k/1.4.0/seed-min.js"></script>
+
+		<script type="text/javascript">
+
+			KISSY.config({
+				packages: {
+					brix: {
+						base: "../src/"
+					}
+				},
+				ignorePackageNameInUri: true,
+				debug: true
+			});
+
+			KISSY.use("brix/base", function (S, Base) {
+				// body...
+				function Person() {
+			    	Person.superclass.constructor.apply(this);
+			    }
+			    
+			    Person.ATTRS = {
+		            name: {
+		                //设置默认值
+		                value: "",
+		                valueFn: function() {
+		                	return "default is youzhiqiang!"
+		                },
+		                setter: function(v) {
+		                	if (v == "jintai.yzq") {
+		                		return "you are right!"
+		                	}
+		                	return v;
+		                }
+		            },
+		            age: {
+		                value: 1,
+		                getter: function(v) {
+		                	return 26;
+		                }
+		            }
+		        };
+
+			    S.extend(Person, Base, {
+					sayHi: function(name) {
+			            alert("Hi, " + name + "! Nice to meet you!");
+			            //触发自定义事件
+			            console.info("fire的返回值？？？", this.fire('say'));
+			        },
+
+			        tellName: function() {
+			            alert("My name is " + this.get('name') + ".");
+			            this.fire('say');
+			        },
+
+			        tellAge: function() {
+			            alert("I'm " + this.get('age') + " years old.");
+			            this.fire('say');
+			        },
+
+			        introduce: function(extra) {
+			            alert("Hello everyone, my name is " + this.get('name') + ", and I'm " + this.get('age') + " years old." + extra);
+			            this.fire('say');
+			        }
+			    });
+
+			    var person = new Person();
+
+			    console.info(person);
+
+			    person.on("say", function() { console.info("sya!!!!"); return 123; });
+			    person.sayHi(0);
+			    person.tellName();
+			    console.info(person, person.get("name"), person.get("age"));
+
+			    person.set("name", "jintai.yzq");
+
+			    console.info(person.get("name"), person.get("age"));
+			})
+
+
+		</script>
+
+	</body>
+</html>

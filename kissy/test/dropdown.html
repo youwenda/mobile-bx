@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+	    <meta name="apple-mobile-web-app-capable" content="yes" />
+	    <meta name="format-detection" content="telephone=no">
+	    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	    <meta name="HandheldFriendly" content="true" />
+	    <meta http-equiv="x-rim-auto-match" content="none" />
+	    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="stylesheet" type="text/css" href="http://a.tbcdn.cn/apps/e/brix/1.0/brix-min.css" />
+		<link rel="stylesheet" type="text/css" href="../../components/dropdown/index.css" />
+	</head>
+
+	<body>
+		<div>
+            <div style="width:200px" class="dropdown dropdown-arrow" id="brick_14">
+                <span class="dropdown-hd">
+                    <span class="dropdown-text" value="3">计划列表3</span>
+                    <i class="iconfont icon-arrow-down">&#459</i>
+                  </span>
+                <ul class="dropdown-list">
+                    <li class="dropdown-item"><span value="1">计划列表</span><i class="iconfont icon-ok">&#126</i></li>
+                    <li class="dropdown-item"><span value="2">计划列表2</span><i class="iconfont icon-ok">&#126</i></li>
+                    <li class="dropdown-item dropdown-itemselected "><span value="3">计划列表3</span><i class="iconfont icon-ok">&#126</i></li>
+                    <li class="dropdown-item"><span value="4">计划列表4</span><i class="iconfont icon-ok">&#126</i></li>
+                </ul>
+            </div>
+
+			<footer>
+				<p>
+					&copy; Copyright  by jintai.yzq
+				</p>
+			</footer>
+		</div>
+
+		<script type="text/javascript" src="http://g.tbcdn.cn/kissy/k/1.4.0/seed-min.js"></script>
+		<script type="text/javascript">
+			KISSY.config({
+				packages: {
+					brix: {
+						base: "../src/"
+					},
+					components: {
+						base: "../../components/"
+					}
+				},
+				ignorePackageNameInUri: true,
+				debug: true
+			});
+
+
+			console.info(KISSY.config("packages"));
+
+			KISSY.use("components/dropdown/", function(S, D) {
+				// new D({el:'#brick_14',mode:2})
+				// 
+				// 
+				var d1 = new D({tpl: '#brick_14'});
+				d1.on('focus', function(e) {
+					console.info(e);
+				})
+			})
+
+			// KISSY.use("brix/app", function (S, app) {
+			// 	// body...
+			// 	app.boot("#brick_14");
+			// });
+
+		</script>
+
+	</body>
+</html>

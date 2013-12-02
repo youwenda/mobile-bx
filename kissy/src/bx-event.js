@@ -1,6 +1,5 @@
-define("brix/bx-event", function  (require, exports, module) {
+KISSY.add("brix/bx-event", function (S, Event) {
 	// body...
-	var $ = Zepto;
 	var unSupportBubbleEvents = ['change', 'valuechange']
 	
     var BxEvent = (function() {
@@ -34,24 +33,24 @@ define("brix/bx-event", function  (require, exports, module) {
                         fn = events[type]
 
                         if (sel === 'self') {
-                            el.on(type, fn);
+                            el.on(type, fn, host)
                         } else if (sel === 'window') {
-                            $(window).on(type, fn)
+                            Event.on(window, type, fn, host)
                         } else if (sel === 'body') {
-                            $(document.body).on(type, fn)
+                           Event.on('body', type, fn, host)
                         } else if (sel === 'document') {
-                            $(document).on(type, fn);
+                            Event.on(document, type, fn, host)
                         } else {
-                            if (~$.inArray(type, unSupportBubbleEvents)) {
+                            if (S.inArray(type, unSupportBubbleEvents)) {
                                 //将不冒泡事件做记录
                                 self.bxUnBubbleEvents[sel] = self.bxUnBubbleEvents[sel] || []
                                 self.bxUnBubbleEvents[sel].push({
                                     type: type,
                                     fn: fn
                                 })
-                                $(sel, el).on(type, fn)
+                                el.all(sel).on(type, fn, host)
                             } else {
-                                el.on(type, sel, fn)
+                                el.delegate(type, sel, fn, host)
                             }
 
                         }
@@ -84,18 +83,18 @@ define("brix/bx-event", function  (require, exports, module) {
                         fn = events[type]
 
                         if (sel === 'self') {
-                            el.off(type, fn)
+                            el.detach(type, fn, host)
                         } else if (sel === 'window') {
-                            $(window).off(type, fn)
+                            Event.detach(window, type, fn, host)
                         } else if (sel === 'body') {
-                            $(document.body).off(type, fn)
+                            Event.detach('body', type, fn, host)
                         } else if (sel === 'document') {
-                            $(document).off(type, fn)
+                            Event.detach(document, type, fn, host)
                         } else {
-                            if ($.inArray(type, unSupportBubbleEvents)) {
-                                $(sel, el).off(type, fn)
+                            if (S.inArray(type, unSupportBubbleEvents)) {
+                                el.all(sel).detach(type, fn, host)
                             } else {
-                                el.off(type, sel, fn)
+                                el.undelegate(type, sel, fn, host)
                             }
                         }
                     }
@@ -108,4 +107,6 @@ define("brix/bx-event", function  (require, exports, module) {
     })();
 
     return BxEvent;
-})
+}, {
+	requires: ['event']
+});

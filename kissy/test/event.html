@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+	    <meta name="apple-mobile-web-app-capable" content="yes" />
+	    <meta name="format-detection" content="telephone=no">
+	    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	    <meta name="HandheldFriendly" content="true" />
+	    <meta http-equiv="x-rim-auto-match" content="none" />
+	    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.ico" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+	</head>
+
+	<body>
+		<div>
+			<header>
+				<h1>HTML5_TEMPLATE</h1>
+			</header>
+			<nav>
+				<p>
+					<a href="/">Home</a>
+				</p>
+				<p>
+					<a href="/contact">Contact</a>
+				</p>
+			</nav>
+
+			<div>
+
+			</div>
+
+			<footer>
+				<p>
+					&copy; Copyright  by jintai.yzq
+				</p>
+			</footer>
+		</div>
+
+		<script type="text/javascript" src="http://g.tbcdn.cn/kissy/k/1.4.0/seed-min.js"></script>
+
+		<script type="text/javascript">
+
+			KISSY.config({
+				packages: {
+					brix: {
+						base: "../src/"
+					}
+				},
+				ignorePackageNameInUri: true,
+				debug: true
+			});
+
+
+			KISSY.use("brix/event", function (S, E) {
+				// body...
+				E.on('done',function(e){
+		            alert(1);
+		        });
+		        E.on('done',function(e){
+		            alert(2);
+		            E.off('done',arguments.callee);
+		        });
+		        E.on('done',function(e){
+		            alert(3);
+		        });
+
+		        E.once('done',function(e){
+		            alert('once');
+		        });
+
+		        E.fire('done',{data:'test'});
+		        E.fire('done',{data:'test2'});
+			});
+		</script>
+
+	</body>
+</html>
