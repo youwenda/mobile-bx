@@ -28,7 +28,7 @@
 				</p>
 			</nav>
 
-			<div>
+			<div id="container">
 
 			</div>
 
@@ -57,7 +57,8 @@
 				// body...
 				var $ = Node.all;
 				var bx = new Brick({
-					tpl: "#tmpl",
+					el: '#container',
+					tpl: $('#tmpl').html(),
 					data: {
 						key1: 1,
 						key2: 2

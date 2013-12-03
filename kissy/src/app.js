@@ -3,117 +3,61 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 	var $ = Node.all;
 	var EMPTY = "";
 
-	var Has = function(owner, prop) {
-	    return owner ? Object.hasOwnProperty.call(owner, prop) : owner; //false 0 null '' undefined
-	};
-
-	var Cfg = {
-		base: "."
-	};
-
-	var GSObj = function(o) {
-	    return function(k, v, r, f) {
-	        switch (arguments.length) {
-	            case 0:
-	                r = o;
-	                break;
-	            case 1:
-	                if (S.isPlainObject(k)) {
-	                    r = S.mix(o, k);
-	                    f = 1;
-	                } else {
-	                    r = Has(o, k) ? o[k] : null;
-	                }
-	                break;
-	            case 2:
-	                if (v === null) {
-	                    delete o[k];
-	                    r = v;
-	                } else {
-	                    o[k] = r = v;
-	                    f = 1;
-	                }
-	                break;
-	        }
-	        if (f) {
-	        	// 目前支持简单的components配置即可
-	        	if (Has(o, 'components')) {
-	        		bxPackageComponents(o['components']);
-	        	}
-	        }
-	        return r;
-	    };
-	};
-
-	function bxPackageComponents(cfg) {
-		var families;
-		if (typeof cfg === 'string') {
-			families = [cfg];
-		} else {
-			families = S.keys(cfg);
-		}
-
-		S.each(families, function(family) {
-			// 如果已经定义过了，就不要覆盖
-            if (S.config('packages')[family]) return
-
-            var base = Cfg.base;
-            var ignoreNs = S.config('ignorePackageNameInUri')
-            var obj = {}
-
-            obj[family] = {
-                base: base + (ignoreNs ? '/' + family : EMPTY)
-            }
-
-
-            S.config('packages', obj)
-		});
-
-	}
+	var Slice = [].slice;
 
     function returnJSON(s) {
         if (s) {
-            return (new Function('return ' + s))();
+            return (new Function("return " + s))();
         } else {
             return {};
         }
     }
 
 	function stamp(el) {
-        if (!el.attr('id')) {
+        if (!el.attr("id")) {
             var id;
             //判断页面id是否存在，如果存在继续随机。
-            while ((id = S.guid('brix_brick_')) && $('#' + id)) {}
-            el.attr('id', id);
+            while ((id = S.guid("brix_brick_")) && $("#" + id)) {}
+            el.attr("id", id);
         }
-        return el.attr('id');
+        return el.attr("id");
     }
 
 	function addBehavior(callback) {
 		var self = this;
-		var el = self.get('el');
-		var useList = [];
-		var brickNodes = $('[bx-name]', el);
+		var el = self.get("el");
+		var brickNodes = $("[bx-name]", el);
 
         //如果el本身也是tpl，则加上自己
-        if (el.attr('bx-name')) {
+        if (el.attr("bx-name")) {
             brickNodes = el.add(brickNodes);
         }
 
-        brickNodes.each(function(brickNode) {
-        	brickNode = $(brickNode);
-			if (brickNode.attr('bx-behavior') != 'true') {
-			    var id = stamp(brickNode),
-			        name = brickNode.attr('bx-name'),
-			        config = returnJSON(brickNode.attr('bx-config'));
+        doAddBehavior.call(self, brickNodes, callback);
 
-			    brickNode.attr('bx-behavior', 'true');
+	}
+
+	function doAddBehavior(brickNodes, callback) {
+		var self = this;
+        var useList = [];
+        var useListMap = {};
+		brickNodes.each(function(brickNode) {
+        	brickNode = $(brickNode);
+			if (brickNode.attr("bx-behavior") != "true") {
+			    var id = stamp(brickNode),
+			        name = brickNode.attr("bx-name"),
+			        config = returnJSON(brickNode.attr("bx-config"));
+
+			    brickNode.attr("bx-behavior", "true");
 			    self.__bricks.push({
 			        id: id,
 			        name: name,
 			        config: config
 			    });
-			    useList.push(name);
+			    if (!useListMap.hasOwnProperty(name)) {
+			    	useListMap[name] = 1;
+			    	useList.push(name);
+			    }
 			}
         });
 
@@ -121,19 +65,33 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 
         	// 此处加载css
         	// 通过配置来判断是否加载css, 调试的时候加载css, 线上的时候直接通过外链来进行引入
+        	
+        	S.use(useList.join(","), function(S) {
+        		if (self.__destroyed) {
+        			return
+        		}
 
-        	console.info(self.__bricks);
+        		var useClassList = Slice.call(arguments, 1);
 
-        	// seajs.use(useList.join(','), function() {
-        	// 	if (self.__destroyed) {
-        	// 		return;
-        	// 	}
+        		S.each(self.__bricks, function(o) {
+        			if (!o.destroyed) {
+        				var id = o.id;
+                        var config = S.merge({
+                            el: "#" + id,
+                            pagelet: self
+                        }, o.config);
+                        var TheBrick = useClassList[S.indexOf(o.name, useList)];
+                        var myBrick = new TheBrick(config);
+                        o.brick = myBrick;
+        			}
+        		});
 
-        	// 	$.each(self.__bricks, function(i, v) {
+        		useList = null;
+        		useListMap = null;
+                useClassList = null;
+                callback && callback.call(self);
 
-        	// 	});
-
-        	// });
+        	})
 
         } else {
         	if (callback) {
@@ -142,56 +100,143 @@ KISSY.add("brix/app", function (S, Node, Brick) {
         }
 	}
 
-	var App;
+    /**
+     * 销毁组件
+     * @param {String} id 组件id
+     */
+    function destroyBrick(id) {
+        var self = this;
+        for (var i = 0; i < self.bricks.length; i++) {
+            var o = self.bricks[i];
+            if (id === o.id) {
+                doDestroyBrick.call(self, o);
+                self.bricks.splice(i, 1);
+                break;
+            }
+        }
+    }
+    /**
+     * 销毁brick引用
+     * @param  {Object} o 需要销毁的对象
+     * @private
+     */
+    function doDestroyBrick(o) {
+        o.destroyed = true;
+        if (o.brick) {
+            o.brick.destroy && o.brick.destroy();
+            o.brick = null;
+        }
+    }
 
-	(function() {
-		var instance;
+    /**
+     * 触发ready添加的方法
+     * @private
+     */
+    function fireReady() {
+        var self = this;
+        if (self.__isReady) {
+            return;
+        }
+        self.__isReady = true;
+        //局部变量，保证所有注册方法只执行一次
+        var readyList = self.__readyList;
+        self.__readyList = [];
+        if (readyList.length > 0) {
+            var fn, i = 0;
+            while (fn = readyList[i++]) {
+                fn.call(self);
+            }
+        }
+        readyList = null;
+    }
 
-		App = function App() {
+	function App() {
+		App.superclass.constructor.apply(this, arguments);
+	}
+
+	S.extend(App, Brick, {
+		initialize: function() {
 			var self = this;
-			if (instance) {
-				return instance;
-			}
+			self.__isReady = false;
+			self.__readyList = [];
+			self.__bricks = [];
+			self.__isAddBehavior = false;
+			self.__destroyed = false;
+			self.__counter = 0;
 
-			instance = self;
+			if (self.__rendered && !self.__isAddBehavior) {
+				self.__isAddBehavior = true;
 
-			App.superclass.constructor.apply(self, arguments);
+				addBehavior.call(self, function() {
+					self.on("beforeRefreshTpl", function(e) {
+						self.__counter++;
+						var node = e.node;
+						S.each(self.bxUnBubbleEvents, function(v, k) {
+		                    var ns = node.all(k)
+		                    S.each(v, function(o) {
+		                        ns.detach(o.type, o.fn, self)
+		                    })
+		                })
+		                if (e.renderType === "html") {
+                            node.all("[bx-name]").each(function(node) {
+                                //self.destroyBrick(node.attr("id"));
+                                destroyBrick.call(self, node.attr("id"));
+                            });
+                        }
+					});
 
-		};
 
-		S.extend(App, Brick, {
-			initialize: function() {
-				var self = this;
-				self.__isReady = false;
-				self.__readyList = [];
-				self.__bricks = [];
-				self.__isAddBehavior = false;
-				self.__destroyed = false;
-				self.__counter = 0;
+					self.on("afterRefreshTmpl", function(e) {
 
-				if (self.__rendered && !self.__isAddBehavior) {
-					self.__isAddBehavior = true;
-					addBehavior.call(self);
-				}
-			}
-		});
+						var node = e.node;
+						S.each(self.bxUnBubbleEvents, function(v, k) {
+		                    var ns = node.all(k)
+		                    S.each(v, function(o) {
+		                        ns.on(o.type, o.fn, self)
+		                    })
+		                })
 
-		S.mix(App, {
-			config: GSObj(Cfg),
-			boot: function(el, data) {
-				if (typeof el === 'string') {
-					el = $(el);
-				}
-				var app = new App({
-					el: el,
-					data: data
+						doAddBehavior.call(self, node.all("[bx-name]"), function() {
+                            self.__counter--;
+                            if (self.__counter === 0) {
+                                fireReady.call(self);
+                            }
+                        });
+                    });
+
+                    fireReady.call(self);
 				});
-			},
-			find: S.noop
-		});
+			}
+		},
+		/**
+         * 渲染完成后需要执行的函数
+         * @param {Function} fn 执行的函数
+         */
+        ready: function(fn) {
+            if (this.__isReady) {
+                fn.call(window, this);
+            } else {
+                this.__readyList.push(fn);
+            }
+        }
+	});
 
+	S.mix(App, {
+		boot: function(el, cfg) {
+			if (S.isPlainObject(el)) {
+				cfg = el;
+			} else {
+				cfg = cfg || {};
+				cfg.el = el;
+			}
 
-	})();
+			var app = new App(cfg);
+
+			console.info(app);
+
+			return app;
+		}
+	});
 
 	return App;
 }, {

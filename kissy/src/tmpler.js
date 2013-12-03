@@ -1,14 +1,14 @@
-KISSY.add("brix/tmpler", function (S, Node, Event) {
-	// body...
-	var $ = Node.all;
-	var EMPTY = '';
-	var defineProperty = Object.defineProperty
+KISSY.add('brix/tmpler', function (S, Node) {
+    // body...
+    
+    var $ = Node.all;
+    var defineProperty = Object.defineProperty
     var defineProperties = Object.defineProperties
 
     try {
         defineProperty({}, '_', {})
     } catch (e) {
-    	if ('__defineGetter__' in {}) {
+        if ('__defineGetter__' in {}) {
             defineProperty = function(obj, prop, desc) {
                 if ('get' in desc) {
                     obj.__defineGetter__(prop, desc.get)
@@ -27,62 +27,54 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
     }
 
     function Tmpler(tpl, data) {
-		var self = this
+        var self = this
 
         data = data || {}
 
-		if (tpl) {
+        if (tpl) {
 
-			self.tpl = tpl
-			self.data = data
+            self.tpl = tpl
+            self.data = data
             self.cache = {}
-		    //延迟刷新存储的key
-	        self.bxRefreshKeys = []
-	        //子模板数组
-	        self.bxSubTpls = []
-	        self.bxBrickTpls = {}
+            //延迟刷新存储的key
+            self.bxRefreshKeys = []
+            //子模板数组
+            self.bxSubTpls = []
+            self.bxBrickTpls = {}
 
-	        self.bxStoreTpls = {}
+            self.bxStoreTpls = {}
 
-	        self.bxIParse();
+            self.bxIParse()
 
-		}
-	}
+        }
 
-	Tmpler.prototype = {
+        self.bxData = self.bxIBuildData(data)
+    }
+
+    Tmpler.prototype = {
+        constructor: Tmpler,
         bxIParse: function() {
-            var self = this;
-            var tpl = self.tpl;
-            var data = self.data;
-            var node, inDom = false;
+            var self = this
+            var tpl = self.tpl
+            var node
 
             if (typeof tpl === 'string') {
                 if (tpl.charAt(0) === '.' || tpl.charAt(0) === '#' || tpl === 'body') {
-                    node = $(tpl);
+                    node = $(tpl)
                 }
             } else {
-                node = tpl;
+                node = tpl
             }
 
             if (node && node.length) {
-				if (node[0].nodeName === 'SCRIPT') {
-					tpl = node.html();
-	            } else {
-	            	inDom = true;
-	            }
-
-	            if (!inDom) {
-	            	// brix3 方式编译模版
-	            	self.tpl = self.bxIBuildTpl(tpl);
-                    node = $(self.tpl);
-	            }
-	            self.inDom = inDom;
-	            self.node = node;
-	            //build data
-	            self.bxData = self.bxIBuildData(data);
+                tpl = node.html()
             }
 
+            // tpl直接是innerHTML
+            // brix3 方式编译模版
+            self.tpl = self.bxIBuildTpl(tpl);
         },
+
         /**
          * 编译模板
          * @private
@@ -291,7 +283,7 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
             return tpl
         },
 
-       /**
+        /**
          * 编译数据，设置bxData对象
          * @private
          */
@@ -312,17 +304,6 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
                         // 每次改变属性，都会进行更新操作，那么当属性很多时，会不会影响性能，两种方法
                         // 1. 设置timer
                         // 2. 控制权移出，即将重新渲染方法交给setChunkData方法
-                        
-                        if (self.timer) {
-                            clearTimeout(self.timer)
-                        }
-                        self.timer = setTimeout(function() {
-                            if (self.bxRefresh) {
-                                self.bxIRefreshTpl(self.bxSubTpls, self.bxRefreshKeys, data)
-                                self.bxRefreshKeys = []
-                            }
-                            self.bxRefresh = true
-                        }, 100)
                     }
                 }
             }
@@ -331,7 +312,6 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
                 for (var prop in data) {
                     fn(prop)
                 }
-
                 return defineProperties({}, props)
             }
         },
@@ -341,12 +321,13 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
          * @param {Node} el 模板根节点
          * @param {Array} subTpls 子模板集合
          * @param {Array} keys 更新的key
-         * @param {Object} data 数据 
+         * @param {Object} data 数据
+         * @param {Object} 当前brix实例 
          * @private
          */
-        bxIRefreshTpl: function(subTpls, keys, data) {
+        bxIRefreshTpl: function(subTpls, keys, data, host) {
             var self = this
-            var el = self.node
+            var el = host.get('el')
             
             var bxRefreshTpl = function(name) {
 
@@ -365,7 +346,7 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
                         if (cache.subTpl.tpl) {
                             //渲染方式，目前支持html，append，prepend
                             var renderType = node.attr('bx-rendertype') || 'html'
-                            self.fire('beforeRefreshTpl', {
+                            host.fire('beforeRefreshTpl', {
                                 node: node,
                                 renderType: renderType
                             })
@@ -383,7 +364,7 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
                              * 局部刷新后触发
                              * @param {KISSY.Event.CustomEventObject} e
                              */
-                            self.fire('afterRefreshTpl', {
+                            host.fire('afterRefreshTpl', {
                                 node: node,
                                 renderType: renderType
                             })
@@ -419,8 +400,8 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
                 cache = self.cache[v.name] = {}
 
                 var datakeys = S.map(v.datakey.split(','), function(str) {
-                    return S.trim(str);
-                });
+                    return S.trim(str)
+                })
 
                 //是否包含的表示符
                 var flg = false
@@ -428,19 +409,19 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
                 for (var i = 0; i < datakeys.length; i++) {
                     for (var j = 0; j < keys.length; j++) {
                         if (datakeys[i] == keys[j]) {
-                            flg = true;
-                            break;
+                            flg = true
+                            break
                         }
                     }
                 }
 
                 if (flg) {
-                    var nodes = $('[bx-subtpl=' + v.name + ']');
+                    var nodes = $('[bx-subtpl=' + v.name + ']')
 
                     //如果el本身也是tpl，则加上自己
                     if (el.attr('bx-subtpl') == v.name) {
                         //$.add(el, nodes);
-                        nodes = el.add(nodes);
+                        nodes = el.add(nodes)
                     }
 
                     cache.bxRefreshNodes = nodes
@@ -450,7 +431,7 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
 
                 } else if (v.subTpls && v.subTpls.length) {
                     cache.bxRefresh = true
-                    self.bxIRefreshTpl(v.subTpls, keys, data)
+                    self.bxIRefreshTpl(v.subTpls, keys, data, host)
                 }
 
             });
@@ -466,12 +447,11 @@ KISSY.add("brix/tmpler", function (S, Node, Event) {
             var self = this
             return tpl + ' for refreshRender Tpl' + S.guid()
         }
-    }
 
-    S.augment(Tmpler, Event);
+    };
 
-	return Tmpler;
+    return Tmpler
 
 }, {
-	requires: ['node', 'brix/event']
+    requires: ['node']
 });

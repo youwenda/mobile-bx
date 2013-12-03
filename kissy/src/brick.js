@@ -2,28 +2,30 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
     // body...
     var $ = Node.all;
     var EMPTY = "";
-    var Noop = function() {}
+    var Noop = function() {};
+    var DEATROY_ACTION = ['remove', 'empty'];
+
     var start;
     function Brick() {
         start = (+new Date());
         Brick.superclass.constructor.apply(this, arguments);
         initializer.call(this);
-        console.info((+new Date) - start)
+        console.info((+new Date) - start);
     }
 
     function initializer() {
         var self = this;
+        var el = self.get("el");
         var tpl = self.get("tpl");
         var data = self.get("data");
+
         if (!self.__tmpler) {
-            var tmpler = new Tmpler(tpl, data);
-            self.__tmpler = tmpler;
-            if (tmpler.inDom) {
-                self.set("el", tmpler.tpl);
-            }
+            self.__tmpler = new Tmpler(tpl, data);
         }
 
-        if (self.get("autoRender") || tmpler.inDom) {
+        self.set("tpl", self.__tmpler.tpl || el.html());
+
+        if (self.get("autoRender")) {
             render.call(self);
         }
     }
@@ -31,9 +33,9 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
     function render() {
         var self = this;
         if (!self.__rendered) {
-            doRender.call(this);
             self.__rendered = true;
-
+            doRender.call(self);
+            
             BxEvent.bxDelegate(self);
 
             // 组件的初始化方法
@@ -43,37 +45,22 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
 
     function doRender() {
         var self = this;
+        var el = self.get("el");
+        var tpl = self.get("tpl");
+        var data = self.get("data");
         var tmpler = self.__tmpler;
-        if (tmpler.tpl && !tmpler.inDom) {
-            var container = self.get("container");
-            var el = self.get("el");
+
+        if (tmpler) {
             // hack render Tmpl Engine
-            var html = tmpler.tpl;
-            var node;
-
-            if (!el || el.length == 0) {
-                var elID = S.guid("brix_"); //'brix_' + S.guid(); 
-                node = $(html);
-
-                if (node.length > 1) {
-                    node = $("<div id='" + elID + "'></div>").append(node);
-                } else {
-                    elID = node.attr("id") || elID;
-                    node.attr("id", elID);
-                }
-                container.append(node);
-                self.set("el", "#" + elID);
-            } else {
-                container.append(html);
-            }
-
+            // var html = tmpler.bxRenderTpl(tpl, data);
+            var html = tpl;
+            el.html(html);
         }
     }
 
-
     Brick.ATTRS = {
         /**
-         * 组件根节点
+         * 组件根节点, 必填选项
          * @type {Node}
          */
         el: {
@@ -81,35 +68,24 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
                 if (typeof s === "string") {
                     s = $(s);
                 }
-                return s;
-            }
-        },
-        /**
-         * 销毁操作时候的动作，默认remove。
-         * 可选none:什么都不做，empty:清空内部html
-         * @cfg {String}
-         */
-        destroyAction: {
-            value: "remove"
-        },
-        /**
-         * 容器节点
-         * @cfg {String}
-         */
-        container: {
-            value: "body",
-            getter: function(s) {
-                if (typeof s === "string") {
-                    s = $(s);
+                if (!s || !s.length) {
+                    throw new Error('el is removed')
                 }
                 return s;
             }
         },
         /**
-         * 模板代码，如果是已经渲染的html元素，则提供渲染html容器节点选择器
+         * 模板
          * @cfg {String}
          */
         tpl: {
+            value: false
+        },
+        /**
+         * 模板数据
+         * @cfg {Object}
+         */
+        data: {
             value: false
         },
         /**
@@ -120,11 +96,12 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
             value: true
         },
         /**
-         * 模板数据
-         * @cfg {Object}
+         * 销毁操作时候的动作，默认remove。
+         * 可选none:什么都不做，empty:清空内部html
+         * @cfg {String}
          */
-        data: {
-            value: false
+        destroyAction: {
+            value: "remove"
         }
     };
 
@@ -142,19 +119,36 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
                 for (k in data) {
                     bxData[k] = data[k];
                 }
+
+                // 设置局部渲染
+                if (tmpler.bxRefresh) {
+                    tmpler.bxIRefreshTpl(tmpler.bxSubTpls, tmpler.bxRefreshKeys, tmpler.data, self)
+                    tmpler.bxRefreshKeys = []
+                }
+                tmpler.bxRefresh = true
             }
         },
 
         destroy: function() {
             var self = this;
+            
+            // 调用每个brick实例的destructor方法
+            self.destructor();
+            
+            if (self.__rendered) {
+                BxEvent.bxUndelegate(self);
+                var action = self.get("destroyAction");
+                if (S.inArray(action, DEATROY_ACTION)) {
+                    el[action]();
+                }
+            }
+
+            self.off();
             self.__tmpler = null;
             self.__rendered = null;
         }
 
     });
-
-    // 要尽量减少原型上的函数
-    // Mix(Brick.prototype, BxEvent);
     
     return Brick;
 

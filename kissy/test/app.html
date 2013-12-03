@@ -18,7 +18,7 @@
 
 	<body>
 		<div>
-            <div style="width:200px" class="dropdown dropdown-arrow" id="brick_14">
+            <div style="width:200px" class="dropdown dropdown-arrow" id="brick_14" bx-name="components/dropdown/">
                 <span class="dropdown-hd">
                     <span class="dropdown-text" value="3">计划列表3</span>
                     <i class="iconfont icon-arrow-down">&#459</i>
@@ -54,22 +54,10 @@
 			});
 
 
-			console.info(KISSY.config("packages"));
-
-			KISSY.use("components/dropdown/", function(S, D) {
-				// new D({el:'#brick_14',mode:2})
-				// 
-				// 
-				var d1 = new D({el: '#brick_14'});
-				d1.on('focus', function(e) {
-					console.info(e);
-				})
-			})
-
-			// KISSY.use("brix/app", function (S, app) {
-			// 	// body...
-			// 	app.boot("#brick_14");
-			// });
+			KISSY.use("brix/app", function (S, app) {
+				// body...
+				app.boot("#brick_14");
+			});
 
 		</script>
 
