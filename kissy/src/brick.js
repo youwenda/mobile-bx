@@ -192,7 +192,6 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
                     el[action]();
                 }
             }
-
             self.detach();
             self.__tmpler = null;
             self.__rendered = null;

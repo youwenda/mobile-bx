@@ -14,6 +14,7 @@ KISSY.add("brix/event", function (S) {
 	 * @name Event
 	 * @namespace
 	 */
+	
 	var Event = {
 	    /**
 	     * @lends Event
@@ -25,11 +26,15 @@ KISSY.add("brix/event", function (S) {
 	     * @param {Boolean} remove 事件触发完成后是否移除这个事件的所有监听
 	     * @param {Boolean} lastToFirst 是否从后向前触发事件的监听列表
 	     */
-
 	    fire: function(name, data, remove, lastToFirst) {
 	        var me = this,
 	        	key = GenKey(name),
-	            list = me[key];
+	            events, list;
+
+	        if (!(events = me.__events)) {
+	        	return;
+	        }
+	        list = events[key];
 
 	        if (list) {
 	        	if (!data) data = {};
@@ -50,7 +55,7 @@ KISSY.add("brix/event", function (S) {
 	        }
 
 	        if (remove) {
-	            delete me[key];
+	            delete events[key];
 	        }
 	    },
 	    /**
@@ -80,7 +85,12 @@ KISSY.add("brix/event", function (S) {
 	     */
 	    on: function(name, fn, insert) {
 	        var key = GenKey(name);
-	        var list = this[key] || (this[key] = []);
+	        var events, list;
+	        if (!this.__events) {
+	        	this.__events = {};
+	        }
+	        events = this.__events;
+	        list = events[key] || (events[key] = []);
 	        if (!isNaN(insert)) {
 	        	list.splice(insert, 0, {
 	        		f: fn
@@ -97,21 +107,29 @@ KISSY.add("brix/event", function (S) {
 	     * @param {Function} fn 事件回调
 	     */
 	    detach: function(name, fn) {
-	        var key = GenKey(name),
-	            list = this[key];
-	        if (list) {
-	            if (fn) {
-	                for (var i = list.length - 1, f; i >= 0; i--) {
-	                    f = list[i];
-	                    if (f.f == fn && !f.d) {
-	                        f.d = 1;
-	                        break;
-	                    }
-	                }
-	            } else {
-	                delete this[key];
-	            }
-	        }
+	    	var key, list, events;
+	    	events = this.__events || {};
+	    	if (name == undefined) {
+	    		for (var i in events) {
+	    			delete events[i];
+	    		}
+	    	} else {
+	    		key = GenKey(name);
+		        list = events[key];
+		        if (list) {
+		            if (fn) {
+		                for (var i = list.length - 1, f; i >= 0; i--) {
+		                    f = list[i];
+		                    if (f.f == fn && !f.d) {
+		                        f.d = 1;
+		                        break;
+		                    }
+		                }
+		            } else {
+		                delete events[key];
+		            }
+		        }
+	    	}
 	    },
 	    /**
 	     * 绑定事件，触发一次后即解绑

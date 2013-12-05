@@ -61,7 +61,7 @@
 		        });
 		        E.on('done',function(e){
 		            alert(2);
-		            E.off('done',arguments.callee);
+		            E.detach('done',arguments.callee);
 		        });
 		        E.on('done',function(e){
 		            alert(3);
@@ -73,6 +73,8 @@
 
 		        E.fire('done',{data:'test'});
 		        E.fire('done',{data:'test2'});
+
+		        console.info(E);
 			});
 		</script>
 

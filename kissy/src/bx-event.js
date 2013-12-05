@@ -25,7 +25,7 @@ KISSY.add("brix/bx-event", function (S, Event) {
                 var self = this
                 var el = host.get('el')
                 var fn
-                host.bxUnBubbleEvents = {}
+                host.__unBubbleEvents = {}
 
                 for (var sel in eventsMap) {
                     var events = eventsMap[sel]
@@ -43,8 +43,8 @@ KISSY.add("brix/bx-event", function (S, Event) {
                         } else {
                             if (S.inArray(type, unSupportBubbleEvents)) {
                                 //将不冒泡事件做记录
-                                host.bxUnBubbleEvents[sel] = host.bxUnBubbleEvents[sel] || []
-                                host.bxUnBubbleEvents[sel].push({
+                                host.__unBubbleEvents[sel] = host.__unBubbleEvents[sel] || []
+                                host.__unBubbleEvents[sel].push({
                                     type: type,
                                     fn: fn
                                 })

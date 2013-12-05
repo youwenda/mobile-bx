@@ -2,7 +2,6 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 	// body...
 	var $ = Node.all;
 	var EMPTY = "";
-
 	var Slice = [].slice;
 
     function returnJSON(s) {
@@ -11,6 +10,14 @@ KISSY.add("brix/app", function (S, Node, Brick) {
         } else {
             return {};
         }
+    }
+
+    function indexMapStr(s) {
+        // 'x/' 'x/y/z/'
+        if (s.charAt(s.length - 1) == "/") {
+            s += "index";
+        }
+        return s;
     }
 
 	function stamp(el) {
@@ -41,17 +48,27 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 		var self = this;
         var useList = [];
         var useListMap = {};
+        var bricks = self.__bricks;
+        var bricksMap = self.__bricksMap;
+        var o, id, name, config;
 		brickNodes.each(function(brickNode) {
 			if (brickNode.attr("bx-behavior") != "true") {
-			    var id = stamp(brickNode),
-			        name = brickNode.attr("bx-name"),
-			        config = returnJSON(brickNode.attr("bx-config"));
-			    brickNode.attr("bx-behavior", "true");
-			    self.__bricks.push({
-			        id: id,
-			        name: name,
-			        config: config
-			    });
+			    id = stamp(brickNode);
+                name = brickNode.attr("bx-name");
+                config = returnJSON(brickNode.attr("bx-config"));
+			    name = indexMapStr(name);
+                brickNode.attr("bx-behavior", "true");
+                
+                o = {
+                    id: id,
+                    index: bricks.length,
+                    name: name,
+                    config: config
+                };
+
+                bricks.push(o);
+                bricksMap[id] = o;
+
 			    if (!useListMap.hasOwnProperty(name)) {
 			    	useListMap[name] = 1;
 			    	useList.push(name);
@@ -59,23 +76,22 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 			}
         });
 
-        if (self.__bricks.length) {
+        if (useList.length) {
 
         	// 此处加载css
         	// 通过配置来判断是否加载css, 调试的时候加载css, 线上的时候直接通过外链来进行引入
         	
         	S.use(useList.join(","), function(S) {
         		if (self.__destroyed) {
-        			return
+        			return;
         		}
 
         		var useClassList = Slice.call(arguments, 1);
 
-        		S.each(self.__bricks, function(o) {
-        			if (!o.destroyed) {
-        				var id = o.id;
+        		S.each(bricks, function(o) {
+        			if (!o.destroyed && !o.brick) {
                         var config = S.merge({
-                            el: "#" + id,
+                            el: "#" + o.id,
                             pagelet: self
                         }, o.config);
                         var TheBrick = useClassList[S.indexOf(o.name, useList)];
@@ -89,7 +105,7 @@ KISSY.add("brix/app", function (S, Node, Brick) {
                 useClassList = null;
                 callback && callback.call(self);
 
-        	})
+        	});
 
         } else {
         	if (callback) {
@@ -104,26 +120,18 @@ KISSY.add("brix/app", function (S, Node, Brick) {
      */
     function destroyBrick(id) {
         var self = this;
-        var i, l, o;
-        for (i = 0, l = self.__bricks.length; i < l; i++) {
-            o = self.__bricks[i];
-            if (id === o.id) {
-                doDestroyBrick.call(self, o);
-                self.__bricks.splice(i, 1);
-                break;
+        var bricks = self.__bricks;
+        var bricksMap = self.__bricksMap;
+        var o;
+
+        if (o = bricksMap[id]) {
+            o.destroyed = true;
+            if (o.brick) {
+                o.brick.destroy && o.brick.destroy();
+                bricks.splice(o.index, 1);
+                o.brick = null;
+                o = null;
             }
-        }
-    }
-    /**
-     * 销毁brick引用
-     * @param  {Object} o 需要销毁的对象
-     * @private
-     */
-    function doDestroyBrick(o) {
-        o.destroyed = true;
-        if (o.brick) {
-            o.brick.destroy && o.brick.destroy();
-            o.brick = null;
         }
     }
 
@@ -159,7 +167,8 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 			self.__isReady = false;
 			self.__readyList = [];
 			self.__bricks = [];
-			self.__isAddBehavior = false;
+			self.__bricksMap = {};
+            self.__isAddBehavior = false;
 			self.__destroyed = false;
 			self.__counter = 0;
 
@@ -169,7 +178,7 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 					self.on("beforeRefreshTpl", function(e) {
                         self.__counter++;
 						var node = e.node;
-						S.each(self.bxUnBubbleEvents, function(v, k) {
+						S.each(self.__unBubbleEvents, function(v, k) {
 		                    var ns = node.all(k)
 		                    S.each(v, function(o) {
 		                        ns.detach(o.type, o.fn, self)
@@ -177,7 +186,6 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 		                })
 		                if (e.renderType === "html") {
                             node.all("[bx-name]").each(function(node) {
-                                //self.destroyBrick(node.attr("id"));
                                 destroyBrick.call(self, node.attr("id"));
                             });
                         }
@@ -187,7 +195,7 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 					self.on("afterRefreshTpl", function(e) {
 
 						var node = e.node;
-						S.each(self.bxUnBubbleEvents, function(v, k) {
+						S.each(self.__unBubbleEvents, function(v, k) {
 		                    var ns = node.all(k)
 		                    S.each(v, function(o) {
 		                        ns.on(o.type, o.fn, self)
@@ -206,6 +214,21 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 				});
 			}
 		},
+        destructor: function() {
+            var self = this;
+            var bricks = self.__bricks;
+            S.each(bricks, function(o) {
+                destroyBrick.call(self, o.id);
+            });
+
+            self.__isReady = null;
+            self.__readyList = null;
+            self.__bricks = null;
+            self.__bricksMap = null;
+            self.__isAddBehavior = null;
+            self.__destroyed = true;
+            self.__counter = 0;
+        },
 		/**
          * 渲染完成后需要执行的函数
          * @param {Function} fn 执行的函数
@@ -216,6 +239,51 @@ KISSY.add("brix/app", function (S, Node, Brick) {
             } else {
                 this.__readyList.push(fn);
             }
+        },
+        /**
+         * 查找组件
+         * @param #id | brick name
+         */
+        one: function(selector) {
+            var self = this;
+            var bricksMap = self.__bricksMap;
+            var result;
+            if (selector.charAt(0) === "#") {
+                selector = selector.substr(1);
+                if (result = bricksMap[selector]) {
+                    result = result.brick;
+                }
+            } else {
+                selector = indexMapStr(selector);
+                S.each(bricksMap, function(o) {
+                    if (o.name == selector) {
+                        result = o.brick;
+                        return false;
+                    }
+                });
+            }
+            return result;
+        },
+        all: function(selector) {
+            var self = this;
+            var bricksMap = self.__bricksMap;
+            var result;
+
+            if (selector.charAt(0) === "#") {
+                selector = selector.substr(1);
+                if (result = bricksMap[selector]) {
+                    result = [result.brick];
+                }
+            } else {
+                result = [];
+                selector = indexMapStr(selector);
+                S.each(bricksMap, function(o) {
+                    if (o.name == selector) {
+                        result.push(o.brick);
+                    }
+                });
+            }
+            return result;
         }
 	});
 

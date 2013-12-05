@@ -36,8 +36,6 @@ KISSY.add("brix/tmpler", function (S, Node) {
         self.bxRefreshKeys = [];
         //子模板数组
         self.bxSubTpls = [];
-        //存储模版数组
-        self.bxStoreTpls = {};
         // 开始解析
         self.bxIParse();
     }
@@ -75,30 +73,10 @@ KISSY.add("brix/tmpler", function (S, Node) {
         	var self = this;
         	var tempTpl;
         	if (tpl) {
-        		tpl = self.bxIBuildStoreTpls(tpl);
         		tpl = self.bxISubTpl(tpl);
-
-        		// 设置临时tempTpl, 用于分别解析自闭和标签以及全闭合标签
-        		tempTpl = self.bxISelfCloseTag(tpl);
-        		self.bxIBuildSubTpls(tempTpl, self.bxSubTpls);
+        		self.bxIBuildSubTpls(tpl, self.bxSubTpls);
         	}
         	return tpl;
-        },
-        /**
-         * 构建{{#bx-store-tpl-id}}……{{/bx-store-tpl}}的存储
-         * @param  {String} tpl 需要解析的模板
-         * @return {String}      替换后的模板
-         * @private
-         */
-        bxIBuildStoreTpls: function(tpl) {
-            var self = this
-            var storeTplRegexp = /\{\{#bx\-store\-tpl\-([^\}]*)?\}\}([\s\S]*?)\{\{\/bx\-store\-tpl\}\}/ig
-
-            tpl = tpl.replace(storeTplRegexp, function(g, id, html) {
-                self.bxStoreTpls[id] = html
-                return EMPTY
-            })
-            return tpl
         },
        /**
          * 为bx-datakey自动生成bx-subtpl
@@ -111,43 +89,6 @@ KISSY.add("brix/tmpler", function (S, Node) {
                 .replace(/(bx-datakey=["'][^"']+["'])/ig, function(match) {
                     return 'bx-subtpl="brix_subtpl_' + S.guid() + '" ' + match
                 })
-        },
-       /**
-         * 自闭合标签处理
-		 * /(br|link|area|img|hr|meta|input|base|param|col|command|keygen|embed|source|track|wbr)/
-         * @param  {String} tpl 模板
-         * @private
-         */
-        bxISelfCloseTag: function(tpl) {
-            var self = this
-            var r = '<(input|img)\\s+[^>]*?bx-subtpl=["\']([^"\']+)["\']\\s+bx-datakey=["\']([^"\']+)["\']\\s*[^>]*?/?>'
-            var reg = new RegExp(r, "ig")
-
-            tpl = tpl.replace(reg, function(all, tag, name, datakey) {
-                self.bxSubTpls.push({
-                    name: name,
-                    datakey: datakey,
-                    attrs: self.bxIStoreAttrs(all)
-                })
-                return EMPTY
-            })
-            return tpl
-        },
-       /**
-         * 获取属性模板
-         * @param  {String} tpl 模板
-         * @return {Object}   存储对象
-         * @private
-         */
-        bxIStoreAttrs: function(tpl) {
-            var attrs = {}
-            var storeAttr = function(all, attr, str) {
-                if (str.indexOf('{{') > -1 && str.indexOf('}}') > 0) {
-                    attrs[attr] = str
-                }
-            }
-            tpl.replace(/([^\s]+)?=["']([^'"]+)["']/ig, storeAttr)
-            return attrs;
         },
        /**
          * 获取模板中的innerHTML
@@ -212,7 +153,6 @@ KISSY.add("brix/tmpler", function (S, Node) {
                     name: m[2],
                     datakey: datakey,
                     tpl: obj.html,
-                    attrs: self.bxIStoreAttrs(m[0]),
                     subTpls: []
                 }
                 subTpls.push(subTpl)
@@ -308,19 +248,6 @@ KISSY.add("brix/tmpler", function (S, Node) {
                                 renderType: renderType
                             })
                         }
-
-                        S.each(cache.subTpl.attrs, function(v, k) {
-                            var val = S.trim(self.bxRenderTpl(v, data))
-                            if (node[0].nodeName == 'INPUT' && k == 'value') {
-                                node.val(val)
-                            } else if(k == 'class'){
-                                node[0].className = val
-                            } 
-                            else {
-                                node.attr(k, val)
-                            }
-                        })
-
                     });
                 }
             }
@@ -346,6 +273,9 @@ KISSY.add("brix/tmpler", function (S, Node) {
                 var flg = false
 
                 for (var i = 0; i < datakeys.length; i++) {
+                    if (flg) {
+                        break
+                    }
                     for (var j = 0; j < keys.length; j++) {
                         if (datakeys[i] == keys[j]) {
                             flg = true
