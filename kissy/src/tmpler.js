@@ -1,25 +1,26 @@
-KISSY.add('brix/tmpler', function (S, Node) {
-    // body...
-    
-    var $ = Node.all;
-    var defineProperty = Object.defineProperty
-    var defineProperties = Object.defineProperties
+KISSY.add("brix/tmpler", function (S, Node) {
+	// body...
+	var $ = Node.all;
+	var EMPTY = "";
+
+    var defineProperty = Object.defineProperty;
+    var defineProperties = Object.defineProperties;
 
     try {
-        defineProperty({}, '_', {})
+        defineProperty({}, "_", {});
     } catch (e) {
-        if ('__defineGetter__' in {}) {
+        if ("__defineGetter__" in {}) {
             defineProperty = function(obj, prop, desc) {
-                if ('get' in desc) {
-                    obj.__defineGetter__(prop, desc.get)
+                if ("get" in desc) {
+                    obj.__defineGetter__(prop, desc.get);
                 }
-                if ('set' in desc) {
-                    obj.__defineSetter__(prop, desc.set)
+                if ("set" in desc) {
+                    obj.__defineSetter__(prop, desc.set);
                 }
             }
             defineProperties = function(obj, props) {
                 for (var prop in props) {
-                    defineProperty(obj, prop, props[prop])
+                    defineProperty(obj, prop, props[prop]);
                 }
                 return obj
             }
@@ -27,85 +28,62 @@ KISSY.add('brix/tmpler', function (S, Node) {
     }
 
     function Tmpler(tpl, data) {
-        var self = this
-
-        data = data || {}
-
-        if (tpl) {
-
-            self.tpl = tpl
-            self.data = data
-            self.cache = {}
-            //延迟刷新存储的key
-            self.bxRefreshKeys = []
-            //子模板数组
-            self.bxSubTpls = []
-            self.bxBrickTpls = {}
-
-            self.bxStoreTpls = {}
-
-            self.bxIParse()
-
-        }
-
-        self.bxData = self.bxIBuildData(data)
+    	var self = this;
+    	self.tpl = tpl || EMPTY;
+    	self.data = data || {};
+		self.cache = {};
+        //延迟刷新存储的key
+        self.bxRefreshKeys = [];
+        //子模板数组
+        self.bxSubTpls = [];
+        //存储模版数组
+        self.bxStoreTpls = {};
+        // 开始解析
+        self.bxIParse();
     }
 
     Tmpler.prototype = {
-        constructor: Tmpler,
+    	constructor: Tmpler,
         bxIParse: function() {
-            var self = this
-            var tpl = self.tpl
-            var node
+            var self = this;
+            var tpl = self.tpl;
+            var data = self.data;
+            var node;
 
             if (typeof tpl === 'string') {
                 if (tpl.charAt(0) === '.' || tpl.charAt(0) === '#' || tpl === 'body') {
-                    node = $(tpl)
+                    node = $(tpl);
                 }
             } else {
-                node = tpl
+                node = tpl;
             }
 
             if (node && node.length) {
-                tpl = node.html()
+                tpl = node.html();
             }
 
             // tpl直接是innerHTML
             // brix3 方式编译模版
             self.tpl = self.bxIBuildTpl(tpl);
+            self.bxData = self.bxIBuildData(data);
         },
-
-        /**
+         /**
          * 编译模板
          * @private
          */
         bxIBuildTpl: function(tpl) {
-            var self = this
-            var tempTpl
+        	var self = this;
+        	var tempTpl;
+        	if (tpl) {
+        		tpl = self.bxIBuildStoreTpls(tpl);
+        		tpl = self.bxISubTpl(tpl);
 
-            if (tpl) {
-                tpl = self.bxIBuildStoreTpls(tpl)
-                tpl = self.bxITag(tpl)
-                tpl = self.bxISubTpl(tpl)
-                tempTpl = self.bxIBuildBrickTpls(tpl)
-            } 
-
-            if (tempTpl) {
-                tempTpl = self.bxISelfCloseTag(tempTpl)
-
-                // fix 原来的方式对于@brix_brix_tag_\d+@brix里面含有bx-datakey的未进行处理
-
-                S.each(self.bxBrickTpls, function(v) {
-                    self.bxIBuildSubTpls((v.start + v.middle + v.end), self.bxSubTpls);
-                })
-
-                self.bxIBuildSubTpls(tempTpl, self.bxSubTpls)
-            }
-
-            return tpl
-
+        		// 设置临时tempTpl, 用于分别解析自闭和标签以及全闭合标签
+        		tempTpl = self.bxISelfCloseTag(tpl);
+        		self.bxIBuildSubTpls(tempTpl, self.bxSubTpls);
+        	}
+        	return tpl;
         },
-
         /**
          * 构建{{#bx-store-tpl-id}}……{{/bx-store-tpl}}的存储
          * @param  {String} tpl 需要解析的模板
@@ -118,36 +96,61 @@ KISSY.add('brix/tmpler', function (S, Node) {
 
             tpl = tpl.replace(storeTplRegexp, function(g, id, html) {
                 self.bxStoreTpls[id] = html
-                return ''
+                return EMPTY
             })
             return tpl
         },
-        /**
-         * 为模板中的组件打上tag标识
-         * @param  {String} tpl 模板
-         * @return {String}     替换后的模板
-         * @private
-         */
-        bxITag: function(tpl) {
-            return tpl.replace(/(bx-tag=["'][^"']+["'])/ig, '')
-                .replace(/(bx-name=["'][^"']+["'])/ig, function(match) {
-                    return match + ' bx-tag="brix_tag_' + S.guid() + '"'
-                })
-        },
-        /**
+       /**
          * 为bx-datakey自动生成bx-subtpl
          * @param  {String} tpl 模板
          * @return {String}     替换后的模板
          * @private
          */
         bxISubTpl: function(tpl) {
-            return tpl.replace(/(bx-subtpl=["'][^"']+["'])/ig, '')
+            return tpl.replace(/(bx-subtpl=["'][^"']+["'])/ig, EMPTY)
                 .replace(/(bx-datakey=["'][^"']+["'])/ig, function(match) {
                     return 'bx-subtpl="brix_subtpl_' + S.guid() + '" ' + match
                 })
         },
-        /**
-         * 获取模板中的innerHTML，替换原来的构建正则
+       /**
+         * 自闭合标签处理
+		 * /(br|link|area|img|hr|meta|input|base|param|col|command|keygen|embed|source|track|wbr)/
+         * @param  {String} tpl 模板
+         * @private
+         */
+        bxISelfCloseTag: function(tpl) {
+            var self = this
+            var r = '<(input|img)\\s+[^>]*?bx-subtpl=["\']([^"\']+)["\']\\s+bx-datakey=["\']([^"\']+)["\']\\s*[^>]*?/?>'
+            var reg = new RegExp(r, "ig")
+
+            tpl = tpl.replace(reg, function(all, tag, name, datakey) {
+                self.bxSubTpls.push({
+                    name: name,
+                    datakey: datakey,
+                    attrs: self.bxIStoreAttrs(all)
+                })
+                return EMPTY
+            })
+            return tpl
+        },
+       /**
+         * 获取属性模板
+         * @param  {String} tpl 模板
+         * @return {Object}   存储对象
+         * @private
+         */
+        bxIStoreAttrs: function(tpl) {
+            var attrs = {}
+            var storeAttr = function(all, attr, str) {
+                if (str.indexOf('{{') > -1 && str.indexOf('}}') > 0) {
+                    attrs[attr] = str
+                }
+            }
+            tpl.replace(/([^\s]+)?=["']([^'"]+)["']/ig, storeAttr)
+            return attrs;
+        },
+       /**
+         * 获取模板中的innerHTML
          * @param  {String} tpl    模板字符串
          * @param  {String} tag    节点的tag，如：div
          * @param  {Number} s_pos  开始查找的位置
@@ -183,49 +186,7 @@ KISSY.add('brix/tmpler', function (S, Node) {
                 e_pos: e_pos + e_tag.length
             }
         },
-        /**
-         * 编译子组件模板
-         * @param  {String} tpl 模板
-         * @return {String}     替换后的模板
-         * @private
-         */
-        bxIBuildBrickTpls: function(tpl) {
-            var self = this
-            var r = '<([\\w]+)\\s+[^>]*?bx-name=["\']([^"\']+)["\']\\s+bx-tag=["\']([^"\']+)["\']\\s*[^>]*?>'
-            var reg = new RegExp(r, "ig")
-
-            var m = reg.exec(tpl)
-            if (m) {
-                var offset = m[0].length
-                var obj = self.bxIInnerHTML(tpl, m[1], reg.lastIndex, offset)
-                self.bxBrickTpls[m[3]] = {
-                    start: m[0],
-                    middle: obj.html,
-                    end: '</' + m[1] + '>'
-                }
-
-                tpl = tpl.substring(0, reg.lastIndex - offset) + '@brix@' + m[3] + '@brix@' + tpl.substr(obj.e_pos)
-                return self.bxIBuildBrickTpls(tpl)
-            }
-            return tpl
-        },
-        /**
-         * 获取属性模板
-         * @param  {String} tpl 模板
-         * @return {Object}   存储对象
-         * @private
-         */
-        bxIStoreAttrs: function(tpl) {
-            var attrs = {}
-            var storeAttr = function(all, attr, str) {
-                if (str.indexOf('{{') > -1 && str.indexOf('}}') > 0) {
-                    attrs[attr] = str
-                }
-            }
-            tpl.replace(/([^\s]+)?=["']([^'"]+)["']/ig, storeAttr)
-            return attrs;
-        },
-        /**
+       /**
          * 对节点中的bx-datakey解析，构建模板和数据配置
          * @param {String} tpl  需要解析的模板
          * @param {Array} subTpls 子模板集合
@@ -235,12 +196,12 @@ KISSY.add('brix/tmpler', function (S, Node) {
             var self = this
             var r = '<([\\w]+)\\s+[^>]*?bx-subtpl=["\']([^"\']+)["\']\\s+bx-datakey=["\']([^"\']+)["\']\\s*[^>]*?>'
 
+            // r += '(<\\1[\\s\\S]*>[\\s\\S]*</\\1>)*'
+
+            // r += '</\\1>'
+
             var reg = new RegExp(r, "ig")
             var m = reg.exec(tpl)
-            var replacer = function(all, bx) {
-                var o = self.bxBrickTpls[bx]
-                return o.start + o.middle + o.end
-            }
 
             if (m) {
                 var datakey = m[3]
@@ -250,40 +211,19 @@ KISSY.add('brix/tmpler', function (S, Node) {
                 var subTpl = {
                     name: m[2],
                     datakey: datakey,
-                    tpl: obj.html.replace(/@brix@(brix_tag_\d+)@brix@/ig, replacer),
+                    tpl: obj.html,
                     attrs: self.bxIStoreAttrs(m[0]),
                     subTpls: []
                 }
                 subTpls.push(subTpl)
-                //self.bxIAddWatch(datakey)
                 //递归编译子模板的子模板
                 self.bxIBuildSubTpls(obj.html, subTpl.subTpls)
                 //递归编译子模板
                 self.bxIBuildSubTpls(tpl.substring(0, reg.lastIndex - offset) + tpl.substr(obj.e_pos), subTpls)
             }
         },
-        /**
-         * 自闭合标签处理
-         * @param  {String} tpl 模板
-         * @private
-         */
-        bxISelfCloseTag: function(tpl) {
-            var self = this
-            var r = '<(input|img)\\s+[^>]*?bx-subtpl=["\']([^"\']+)["\']\\s+bx-datakey=["\']([^"\']+)["\']\\s*[^>]*?/?>'
-            var reg = new RegExp(r, "ig")
 
-            tpl = tpl.replace(reg, function(all, tag, name, datakey) {
-                self.bxSubTpls.push({
-                    name: name,
-                    datakey: datakey,
-                    attrs: self.bxIStoreAttrs(all)
-                })
-                return ''
-            })
-            return tpl
-        },
-
-        /**
+       /**
          * 编译数据，设置bxData对象
          * @private
          */
@@ -328,7 +268,6 @@ KISSY.add('brix/tmpler', function (S, Node) {
         bxIRefreshTpl: function(subTpls, keys, data, host) {
             var self = this
             var el = host.get('el')
-            
             var bxRefreshTpl = function(name) {
 
                 var cache = self.cache[name]
@@ -341,8 +280,8 @@ KISSY.add('brix/tmpler', function (S, Node) {
 
                 if (nodes) {
                     // fire events
-                    S.each(nodes, function(node) {
-                        node = $(node)
+                    //S.each(nodes, function(node) {
+                    nodes.each(function(node) {
                         if (cache.subTpl.tpl) {
                             //渲染方式，目前支持html，append，prepend
                             var renderType = node.attr('bx-rendertype') || 'html'
@@ -445,13 +384,13 @@ KISSY.add('brix/tmpler', function (S, Node) {
          */
         bxRenderTpl: function(tpl, data) {
             var self = this
-            return tpl + ' for refreshRender Tpl' + S.guid()
+            var f = crox_js(tpl)
+            return f(data)
         }
-
     };
 
     return Tmpler
 
 }, {
-    requires: ['node']
-});
+	requires: ["node"]
+})

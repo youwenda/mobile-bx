@@ -17,8 +17,9 @@
 	</head>
 
 	<body>
-		<div>
-            <div style="width:200px" class="dropdown dropdown-arrow" id="brick_14" bx-name="components/dropdown/">
+		<div id="container" bx-datakey="dropdown_list">
+
+			<div id="brix_14" style="width:200px" class="dropdown dropdown-arrow" bx-name="components/dropdown/">
                 <span class="dropdown-hd">
                     <span class="dropdown-text" value="3">计划列表3</span>
                     <i class="iconfont icon-arrow-down">&#459</i>
@@ -31,6 +32,8 @@
                 </ul>
             </div>
 
+            <!-- <div id="container2" bx-name="components/dropdown/" bx-config="{tpl:'#tmpl_dropdown'}" bx-datakey="dropdown_list"></div> -->
+
 			<footer>
 				<p>
 					&copy; Copyright  by jintai.yzq
@@ -38,7 +41,56 @@
 			</footer>
 		</div>
 
-		<script type="text/javascript" src="http://g.tbcdn.cn/kissy/k/1.4.0/seed-min.js"></script>
+		<script type="text/javascript" src="http://g.tbcdn.cn/kissy/k/1.4.0/seed.js"></script>
+		<script type="text/javascript" src="../../lib/crox_mobile.js"></script>
+
+		<!--brix begin-->
+        <script>
+			var dropdown_data = {
+                dropdown_list:[{
+                        value: "1",
+                        text: "测试列表1",
+                        selected:true,
+                        color:'red'
+                    },
+                    {
+                        value: "2",
+                        text: "测试列表2",
+                        color:'red'
+                    },
+                    {
+                        value: "3",
+                        text: "测试列表3",
+                        color:'red'
+                    },
+                    {
+                        value: "4",
+                        text: "测试列表4",
+                        color: 'green'
+                    }]
+            }
+        </script>
+        <script type="text/tmpl" id="tmpl_dropdown">
+            <div style="width:200px" class="dropdown">
+            	{{#each root.dropdown_list 'dd'}}
+            		{{#if dd.selected}}
+            			<span class="dropdown-hd">
+		                <span class="dropdown-text" {{#if dd.color === 'red'}}style="color:{{dd.color}}"{{/if}} value="{{dd.value}}">{{dd.text}}</span>
+		                </span>
+            		{{/if}}
+            	{{/each}}
+
+            	<ul class="dropdown-list dropdown-list-noicon">
+            		{{#each root.dropdown_list 'dd'}}
+                    <li class="dropdown-item{{#if dd.selected}} dropdown-itemselected{{/if}}"><span value="{{dd.value}}">{{dd.text}}</span>
+                    	<i class="iconfont icon-ok">&#126</i>
+                    </li>
+                	{{/each}}
+                </ul>
+
+            </div>
+        </script>
+
 		<script type="text/javascript">
 			KISSY.config({
 				packages: {
@@ -55,8 +107,37 @@
 
 
 			KISSY.use("brix/app", function (S, app) {
-				// body...
-				app.boot("#brick_14");
+				var p = app.boot("body", {
+					data: dropdown_data
+				});
+				p.ready(function() {
+
+					p.__bricks[0].brick.on('focus', function(e) {
+						console.info(e);
+					})
+
+					console.info(p);
+
+				});
+
+					dropdown_data.dropdown_list.push({
+	                    value: "5",
+	                    text: "测试列表5",
+	                    color: 'green'
+					});
+				
+					// var p2 = app.boot("#container", {
+					// 	tpl: "#tmpl_dropdown",
+					// 	data: dropdown_data
+					// })
+
+					setTimeout(function() {
+						p.setChunkData(dropdown_data);
+					}, 3000);
+
+				// p.__bricks[0].brick.on('focus', function() {
+				// 	console.info(arguments);
+				// });
 			});
 
 		</script>

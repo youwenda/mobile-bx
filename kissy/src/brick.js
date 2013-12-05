@@ -3,7 +3,7 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
     var $ = Node.all;
     var EMPTY = "";
     var Noop = function() {};
-    var DEATROY_ACTION = ['remove', 'empty'];
+    var DEATROY_ACTION = ["remove", "empty"];
 
     var start;
     function Brick() {
@@ -19,15 +19,22 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
         var tpl = self.get("tpl");
         var data = self.get("data");
 
+        if (!tpl) {
+            tpl = el.html();
+        }
+
         if (!self.__tmpler) {
             self.__tmpler = new Tmpler(tpl, data);
         }
 
-        self.set("tpl", self.__tmpler.tpl || el.html());
+        self.set("tpl", self.__tmpler.tpl);
 
         if (self.get("autoRender")) {
             render.call(self);
         }
+
+        //对原有pagelet的兼容
+        self.__pagelet = self.get("pagelet");
     }
 
     function render() {
@@ -49,11 +56,9 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
         var tpl = self.get("tpl");
         var data = self.get("data");
         var tmpler = self.__tmpler;
-
         if (tmpler) {
             // hack render Tmpl Engine
-            // var html = tmpler.bxRenderTpl(tpl, data);
-            var html = tpl;
+            var html = tmpler.bxRenderTpl(tpl, data);
             el.html(html);
         }
     }
@@ -102,6 +107,13 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
          */
         destroyAction: {
             value: "remove"
+        },
+        /**
+         * 记录每个组件的parent属性，如果存在的话
+         * @type {Object}
+         */
+        pagelet: {
+            value: null
         }
     };
 
@@ -129,9 +141,47 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
             }
         },
 
+        /**
+         * 触发事件
+         * @param {String} name 事件名称
+         * @param {Object} data 事件对象
+         * @param {Boolean} remove 事件触发完成后是否移除这个事件的所有监听
+         * @param {Boolean} lastToFirst 是否从后向前触发事件的监听列表
+         */
+        fire: function(name, data, remove, lastToFirst) {
+            var self = this;
+            var pagelet = self.__pagelet;
+            var elID;
+
+            if (pagelet) {
+                elID = self.get("el").attr("id");
+                pagelet.fire(elID + "_" + name, data, remove, lastToFirst);
+            } else {
+                Brick.superclass.fire.apply(this, arguments);
+            }
+        },
+        /**
+         * 绑定事件
+         * @param {String} name 事件名称
+         * @param {Function} fn 事件回调
+         * @param {Interger} insert 事件监听插入的位置
+         */
+        on: function(name, fn, insert) {
+            var self = this;
+            var pagelet = self.__pagelet;
+            var elID;
+
+            if (pagelet) {
+                elID = self.get("el").attr("id");
+                pagelet.on(elID + "_" + name, fn, insert);
+            } else {
+                Brick.superclass.on.apply(self, arguments);
+            }
+        },
+
         destroy: function() {
             var self = this;
-            
+            var el = self.get("el");
             // 调用每个brick实例的destructor方法
             self.destructor();
             
@@ -143,9 +193,11 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
                 }
             }
 
-            self.off();
+            self.detach();
             self.__tmpler = null;
             self.__rendered = null;
+            self.__pagelet = null;
+            self.set("pagelet", null);
         }
 
     });

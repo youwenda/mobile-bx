@@ -14,13 +14,13 @@ KISSY.add("brix/app", function (S, Node, Brick) {
     }
 
 	function stamp(el) {
-        if (!el.attr("id")) {
-            var id;
+        var id;
+        if (!(id = el.attr("id"))) {
             //判断页面id是否存在，如果存在继续随机。
-            while ((id = S.guid("brix_brick_")) && $("#" + id)) {}
+            while ((id = S.guid("brix_brick_")) && $("#" + id).length) {}
             el.attr("id", id);
         }
-        return el.attr("id");
+        return id;
     }
 
 	function addBehavior(callback) {
@@ -42,12 +42,10 @@ KISSY.add("brix/app", function (S, Node, Brick) {
         var useList = [];
         var useListMap = {};
 		brickNodes.each(function(brickNode) {
-        	brickNode = $(brickNode);
 			if (brickNode.attr("bx-behavior") != "true") {
 			    var id = stamp(brickNode),
 			        name = brickNode.attr("bx-name"),
 			        config = returnJSON(brickNode.attr("bx-config"));
-
 			    brickNode.attr("bx-behavior", "true");
 			    self.__bricks.push({
 			        id: id,
@@ -106,11 +104,12 @@ KISSY.add("brix/app", function (S, Node, Brick) {
      */
     function destroyBrick(id) {
         var self = this;
-        for (var i = 0; i < self.bricks.length; i++) {
-            var o = self.bricks[i];
+        var i, l, o;
+        for (i = 0, l = self.__bricks.length; i < l; i++) {
+            o = self.__bricks[i];
             if (id === o.id) {
                 doDestroyBrick.call(self, o);
-                self.bricks.splice(i, 1);
+                self.__bricks.splice(i, 1);
                 break;
             }
         }
@@ -166,10 +165,9 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 
 			if (self.__rendered && !self.__isAddBehavior) {
 				self.__isAddBehavior = true;
-
 				addBehavior.call(self, function() {
 					self.on("beforeRefreshTpl", function(e) {
-						self.__counter++;
+                        self.__counter++;
 						var node = e.node;
 						S.each(self.bxUnBubbleEvents, function(v, k) {
 		                    var ns = node.all(k)
@@ -186,7 +184,7 @@ KISSY.add("brix/app", function (S, Node, Brick) {
 					});
 
 
-					self.on("afterRefreshTmpl", function(e) {
+					self.on("afterRefreshTpl", function(e) {
 
 						var node = e.node;
 						S.each(self.bxUnBubbleEvents, function(v, k) {

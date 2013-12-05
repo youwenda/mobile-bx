@@ -5,8 +5,6 @@ KISSY.add("brix/base", function (S, Event) {
     function Base(config) {
         var self = this,
             c = self.constructor;
-        // save user config
-        // self.userConfig = config;
 
         // save attrs key and attrs value
         self.__attrs = {};
@@ -22,7 +20,7 @@ KISSY.add("brix/base", function (S, Event) {
 
     function normalFn(method) {
         var self = this;
-        if (typeof method == 'string') {
+        if (typeof method == "string") {
             return self[method];
         }
         return method;
@@ -34,11 +32,6 @@ KISSY.add("brix/base", function (S, Event) {
             for (var attr in attrs) {
                 // 子类上的 ATTRS 配置优先
                 // 父类后加，父类不覆盖子类的相同设置
-                // 属性对象会 merge
-                // a: {y: {getter: fn}}, b: {y: {value: 3}}
-                // b extends a
-                // =>
-                // b {y: {value: 3, getter: fn}}
                 addAttr.call(self, attr, attrs[attr], false);
             }
         }
@@ -59,7 +52,6 @@ KISSY.add("brix/base", function (S, Event) {
         var self = this;
         if (config) {
             for (var attr in config) {
-                // 用户设置会调用 setter/validator 的，但不会触发属性变化事件
                 setInternal.call(self, attr, config[attr]);
             }
         }
@@ -68,12 +60,8 @@ KISSY.add("brix/base", function (S, Event) {
     function setInternal(name, value) {
         var self = this,
             setValue = undefined,
-        // if host does not have meta info corresponding to (name,value)
-        // then register on demand in order to collect all data meta info
-        // 一定要注册属性元数据，否则其他模块通过 _attrs 不能枚举到所有有效属性
-        // 因为属性在声明注册前可以直接设置值
             attrConfig = self.__attrs[name] || (self.__attrs[name] = {});
-            setter = attrConfig['setter'];
+            setter = attrConfig["setter"];
 
         // if setter has effect
         if (setter && (setter = normalFn.call(self, setter))) {
@@ -107,32 +95,14 @@ KISSY.add("brix/base", function (S, Event) {
 
         return attrConfig.value;
     }
-
-    // kissy 1.4的写法，要支持么
-
-    // Base.extend = function (px, sx) {
-
-    //     var F = function() {
-    //         F.superclass.constructor.apply(this, arguments);
-    //     };
-
-    //     return extend(F, Base, px, sx);
-
-    // };
-    
-    // 还是要支持简单实用的extend主义
     
     S.augment(Base, Event);
 
     S.augment(Base, {
         /**
          * Sets the value of an attribute.
-         * @param {String|Object} name attribute 's name or attribute name and value map
-         * @param [value] attribute 's value
-         * @param {Object} [opts] some options
-         * @param {Boolean} [opts.silent] whether fire change event
-         * @param {Function} [opts.error] error handler
-         * @return {Boolean} whether pass validator
+         * @param {String|Object} name attribute "s name or attribute name and value map
+         * @param [value] attribute "s value
          */
         set: function(name, value) {
             var self = this;
@@ -147,7 +117,7 @@ KISSY.add("brix/base", function (S, Event) {
         },
         /**
          * Gets the current value of the attribute.
-         * @param {String} name attribute 's name
+         * @param {String} name attribute "s name
          * @return {*}
          */
         get: function (name) {
@@ -157,7 +127,7 @@ KISSY.add("brix/base", function (S, Event) {
                 getter, ret;
 
             attrConfig = self.__attrs[name] || (self.__attrs[name] = {});
-            getter = attrConfig['getter'];
+            getter = attrConfig["getter"];
 
             // get user-set value or default value
             //user-set value takes privilege

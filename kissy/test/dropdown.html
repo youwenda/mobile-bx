@@ -31,6 +31,8 @@
                 </ul>
             </div>
 
+            <div id="container"></div>
+
 			<footer>
 				<p>
 					&copy; Copyright  by jintai.yzq
@@ -39,6 +41,56 @@
 		</div>
 
 		<script type="text/javascript" src="http://g.tbcdn.cn/kissy/k/1.4.0/seed-min.js"></script>
+		<script type="text/javascript" src="../../lib/crox_mobile.js"></script>
+		
+				<!--brix begin-->
+        <script>
+			var dropdown_data = {
+                dropdown_list:[{
+                        value: "1",
+                        text: "测试列表1",
+                        selected:true,
+                        color:'red'
+                    },
+                    {
+                        value: "2",
+                        text: "测试列表2",
+                        color:'red'
+                    },
+                    {
+                        value: "3",
+                        text: "测试列表3",
+                        color:'red'
+                    },
+                    {
+                        value: "4",
+                        text: "测试列表4",
+                        color: 'green'
+                    }]
+            }
+        </script>
+        <script type="text/tmpl" id="tmpl_dropdown">
+            <div style="width:200px" id="brick13" bx-datakey="dropdown_list" class="dropdown">
+            	{{#each root.dropdown_list 'dd'}}
+            		{{#if dd.selected}}
+            			<span class="dropdown-hd">
+		                <span class="dropdown-text" {{#if dd.color === 'red'}}style="color:{{dd.color}}"{{/if}} value="{{dd.value}}">{{dd.text}}</span>
+		                </span>
+            		{{/if}}
+            	{{/each}}
+
+            	<ul class="dropdown-list dropdown-list-noicon">
+            		{{#each root.dropdown_list 'dd'}}
+                    <li class="dropdown-item{{#if dd.selected}} dropdown-itemselected{{/if}}"><span value="{{dd.value}}">{{dd.text}}</span>
+                    	<i class="iconfont icon-ok">&#126</i>
+                    </li>
+                	{{/each}}
+                </ul>
+
+            </div>
+        </script>
+
+
 		<script type="text/javascript">
 			KISSY.config({
 				packages: {
@@ -64,6 +116,24 @@
 				d1.on('focus', function(e) {
 					console.info(e);
 				})
+
+				var d2 = new D({el: '#container', tpl: '#tmpl_dropdown', data: dropdown_data});
+
+				console.info(d2);
+
+				d2.on('focus', function(e) {
+					console.info(d2, e)
+				});
+
+				dropdown_data.dropdown_list.push({
+                    value: "5",
+                    text: "测试列表5",
+                    color: 'green'
+				});
+
+				setTimeout(function() {
+					d2.setChunkData(dropdown_data);
+				}, 3000);
 			})
 
 			// KISSY.use("brix/app", function (S, app) {

@@ -96,7 +96,7 @@ KISSY.add("brix/event", function (S) {
 	     * @param {String} name 事件名称
 	     * @param {Function} fn 事件回调
 	     */
-	    off: function(name, fn) {
+	    detach: function(name, fn) {
 	        var key = GenKey(name),
 	            list = this[key];
 	        if (list) {
@@ -121,7 +121,7 @@ KISSY.add("brix/event", function (S) {
 	    once: function(name, fn) {
 	    	var me = this;
 	    	var wrap = function() {
-	    		me.off(name, wrap);
+	    		me.detach(name, wrap);
 	    		fn.apply(me, arguments);
 	    	};
 	        me.on(name, wrap);
