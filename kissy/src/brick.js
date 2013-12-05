@@ -154,7 +154,7 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
             var elID;
 
             if (pagelet) {
-                elID = self.get("el").attr("id");
+                elID = self.get("el").attr("bx-name");
                 pagelet.fire(elID + "_" + name, data, remove, lastToFirst);
             } else {
                 Brick.superclass.fire.apply(this, arguments);
@@ -172,7 +172,7 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
             var elID;
 
             if (pagelet) {
-                elID = self.get("el").attr("id");
+                elID = self.get("el").attr("bx-name");
                 pagelet.on(elID + "_" + name, fn, insert);
             } else {
                 Brick.superclass.on.apply(self, arguments);
