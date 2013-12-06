@@ -115,15 +115,23 @@
 
 				p.ready(function() {
 
-					var dd = p.one("components/dropdown/index");
+					//1.1 可通过名称获取组件 components/dropdown/ 或 components/dropdown/index
+					var dd = p.one("components/dropdown/");
+
+					//1.2 也可通过id来获取组件
+					//var dd = p.one("#brix_dd");
 
 					dd.on("focus", function(e) {
-						console.info("trigger focus!!");
+						console.info(e, "trigger focus!!");
 					});
-
-					console.info(dd);
-					console.info(p);
 				});
+
+				//第二种写法, 后面的参数直接将方法添加在最前
+				// bx-name@eventType
+				
+				p.on("components/dropdown/@focus", function(e) {
+					console.info(e, "牛逼的focus事件");
+				}, 0);
 
 				dropdown_data.dropdown_list.push({
                     value: "5",

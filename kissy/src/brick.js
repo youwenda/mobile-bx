@@ -4,10 +4,17 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
     var EMPTY = "";
     var Noop = function() {};
     var DEATROY_ACTION = ["remove", "empty"];
-
     var start;
+    function indexMapStr(s) {
+        // 'x/' 'x/y/z/'
+        if (s.charAt(s.length - 1) == "/") {
+            s += "index";
+        }
+        return s;
+    }
+
     function Brick() {
-        start = (+new Date());
+        start = (+new Date);
         Brick.superclass.constructor.apply(this, arguments);
         initializer.call(this);
         console.info((+new Date) - start);
@@ -151,11 +158,11 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
         fire: function(name, data, remove, lastToFirst) {
             var self = this;
             var pagelet = self.__pagelet;
-            var elID;
+            var evName;
 
             if (pagelet) {
-                elID = self.get("el").attr("bx-name");
-                pagelet.fire(elID + "_" + name, data, remove, lastToFirst);
+                evName = indexMapStr(self.get("el").attr("bx-name")) + "@" + name;
+                pagelet.fire(evName, data, remove, lastToFirst);
             } else {
                 Brick.superclass.fire.apply(this, arguments);
             }
@@ -169,11 +176,11 @@ KISSY.add("brix/brick", function (S, Node, Base, Tmpler, BxEvent) {
         on: function(name, fn, insert) {
             var self = this;
             var pagelet = self.__pagelet;
-            var elID;
+            var evName;
 
             if (pagelet) {
-                elID = self.get("el").attr("bx-name");
-                pagelet.on(elID + "_" + name, fn, insert);
+                evName = indexMapStr(self.get("el").attr("bx-name")) + "@" + name;
+                pagelet.on(evName, fn, insert);
             } else {
                 Brick.superclass.on.apply(self, arguments);
             }

@@ -284,6 +284,22 @@ KISSY.add("brix/app", function (S, Node, Brick) {
                 });
             }
             return result;
+        },
+        on: function(name, fn, insert) {
+            var self = this;
+            var sign = "@";
+            var args = arguments;
+            self.ready(function() {
+                if (!~name.indexOf(sign)) {
+                    Brick.superclass.on.apply(self, args);
+                } else {
+                    var tempArrs = name.split(sign);
+                    if (tempArrs.length == 2) {
+                        name = indexMapStr(tempArrs[0]) + "@" + tempArrs[1];
+                    }
+                    Brick.superclass.on.call(self, name, fn, insert);
+                }
+            });
         }
 	});
 
