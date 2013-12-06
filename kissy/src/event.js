@@ -63,25 +63,6 @@ KISSY.add("brix/event", function (S) {
 	     * @param {String} name 事件名称
 	     * @param {Function} fn 事件回调
 	     * @param {Interger} insert 事件监听插入的位置
-	     * @example
-	     * var T=Magix.mix({},Event);
-	        T.on('done',function(e){
-	            alert(1);
-	        });
-	        T.on('done',function(e){
-	            alert(2);
-	            T.off('done',arguments.callee);
-	        });
-	        T.on('done',function(e){
-	            alert(3);
-	        });//监听插入到开始位置
-
-	        T.once('done',function(e){
-	            alert('once');
-	        });
-
-	        T.fire('done',{data:'test'});
-	        T.fire('done',{data:'test2'});
 	     */
 	    on: function(name, fn, insert) {
 	        var key = GenKey(name);
